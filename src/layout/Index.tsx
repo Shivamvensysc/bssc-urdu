@@ -4,21 +4,19 @@ import Footer from "./Footer";
 
 const Index = () => {
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="min-h-screen">
       {/* Fixed Header */}
-      <header className="shrink-0">
+      <div className="fixed top-0 left-0 right-0 z-50">
         <Header />
-      </header>
+      </div>
 
-      {/* Scrollable Content */}
-      <main className="flex-1 overflow-y-auto">
+      {/* Page Content */}
+      <main className="pt-20">
         <Outlet />
       </main>
 
-      {/* Fixed Footer */}
-      <footer className="shrink-0">
-        <Footer />
-      </footer>
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };

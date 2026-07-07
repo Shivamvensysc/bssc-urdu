@@ -4,6 +4,17 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { 
+  Mail, 
+  Phone, 
+  Calendar, 
+  Shield, 
+  RefreshCw, 
+  AlertCircle,
+  ArrowRight,
+  Search,
+  ShieldCheck
+} from "lucide-react";
 
 const formSchema = z.object({
   email: z
@@ -104,182 +115,184 @@ const BSSCForgotRegistration: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-[1100px] mx-auto bg-white shadow-sm font-sans text-black">
-      <div className="p-4 bg-white min-h-[500px]">
-        <div className="border border-[#001489] rounded-sm overflow-hidden shadow-sm">
-          <div className="bg-[#0000a0] text-white font-bold text-[13px] px-4 py-2 uppercase">
-            FORGOT YOUR REGISTRATION NUMBER.
+    <div className="min-h-screen bg-[#F4F5F7] px-4 py-8 flex flex-col items-center justify-center gap-6">
+      <div className="w-full max-w-[600px]">
+        <div className="bg-white border border-[#E1E5E3] rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.03)] px-6 pt-6 pb-8 md:px-8">
+          
+          {/* Header */}
+          <div className="text-center mb-2">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <div className="h-12 w-12 rounded-full bg-[#003A2B]/10 flex items-center justify-center">
+                <Search className="h-6 w-6 text-[#003A2B]" />
+              </div>
+            </div>
+            <h2 className="text-[24px] md:text-[26px] font-bold text-[#003A2B]">
+              Forgot Registration Number
+            </h2>
+            <p className="text-[14px] text-[#4B5563] mt-1">
+              Enter your details below to recover your registration number
+            </p>
           </div>
 
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="bg-white py-12 px-4 space-y-5 max-w-[650px] mx-auto"
-          >
-            {/* Email */}
-            <div className="grid grid-cols-12 gap-2 items-start">
-              <label className="col-span-5 text-right pt-3 font-bold text-[12px] uppercase">
-                <span className="text-red-600">*</span> EMAIL ID :
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            {/* Email Field */}
+            <div>
+              <label className="block text-[14px] font-semibold text-[#374151] mb-2">
+                <span className="text-red-500">*</span> Email ID
               </label>
-
-              <div className="col-span-7">
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
+                  <Mail size={18} />
+                </span>
                 <input
                   {...register("email")}
                   type="email"
-                  className="w-full border border-[#4c90ff] rounded-lg py-2 px-3 outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter your email"
+                  className="w-full py-3 border border-[#4c90ff] rounded-lg pl-11 pr-4 text-[15px] outline-none focus:border-[#003A2B] transition-colors"
+                  placeholder="Enter your registered email"
                 />
-
-                {errors.email && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.email.message}
-                  </p>
-                )}
               </div>
+              {errors.email && (
+                <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {errors.email.message}
+                </p>
+              )}
             </div>
 
-            {/* Mobile */}
-            <div className="grid grid-cols-12 gap-2 items-start">
-              <label className="col-span-5 text-right pt-3 font-bold text-[12px] uppercase">
-                <span className="text-red-600">*</span> MOBILE NO :
+            {/* Mobile Field */}
+            <div>
+              <label className="block text-[14px] font-semibold text-[#374151] mb-2">
+                <span className="text-red-500">*</span> Mobile Number
               </label>
-
-              <div className="col-span-7">
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
+                  <Phone size={18} />
+                </span>
                 <input
                   {...register("mobile")}
                   type="text"
                   maxLength={10}
+                  className="w-full py-3 border border-[#4c90ff] rounded-lg pl-11 pr-4 text-[15px] outline-none focus:border-[#003A2B] transition-colors"
                   placeholder="Enter 10 digit mobile number"
-                  className="w-full border border-[#4c90ff] rounded-lg py-2 px-3 outline-none focus:ring-2 focus:ring-blue-500"
                   onChange={(e) => {
                     const value = e.target.value.replace(/\D/g, '');
                     e.target.value = value;
                     register("mobile").onChange(e);
                   }}
                 />
-
-                {errors.mobile && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.mobile.message}
-                  </p>
-                )}
               </div>
+              {errors.mobile && (
+                <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {errors.mobile.message}
+                </p>
+              )}
             </div>
 
-            {/* DOB with DatePicker */}
-            <div className="grid grid-cols-12 gap-2 items-start">
-              <label className="col-span-5 text-right pt-3 font-bold text-[12px] uppercase">
-                <span className="text-red-600">*</span> DATE OF BIRTH :
+            {/* DOB Field */}
+            <div>
+              <label className="block text-[14px] font-semibold text-[#374151] mb-2">
+                <span className="text-red-500">*</span> Date of Birth
               </label>
-
-              <div className="col-span-7">
-                <div className="flex gap-2 items-center">
-                  <div className="flex-1">
-                    <DatePicker
-                      selected={selectedDate}
-                      onChange={handleDateChange}
-                      dateFormat="dd-MM-yyyy"
-                      placeholderText="DD-MM-YYYY"
-                      className="w-full border border-[#4c90ff] rounded-lg py-2 px-3 outline-none focus:ring-2 focus:ring-blue-500"
-                      showYearDropdown
-                      showMonthDropdown
-                      dropdownMode="select"
-                      maxDate={new Date()}
-                      minDate={new Date(new Date().getFullYear() - 100, 0, 1)}
-                      isClearable
-                      shouldCloseOnSelect
-                      popperClassName="react-datepicker-popper"
-                    />
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      // Focus the date picker
-                      const datePickerInput = document.querySelector('.react-datepicker__input-container input');
-                      if (datePickerInput) {
-                        (datePickerInput as HTMLInputElement).focus();
-                      }
-                    }}
-                    className="border px-2 py-2 rounded-lg bg-gray-100 hover:bg-gray-200"
-                  >
-                    📅
-                  </button>
-                </div>
-
-                <div className="text-blue-600 text-xs font-bold mt-1">
-                  DD-MM-YYYY (01-08-2025)
-                </div>
-
-                {errors.dob && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.dob.message}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Captcha Input */}
-            <div className="grid grid-cols-12 gap-2 items-start">
-              <label className="col-span-5 text-right pt-3 font-bold text-[12px] uppercase">
-                <span className="text-red-600">*</span> ENTER CAPTCHA :
-              </label>
-
-              <div className="col-span-7">
-                <input
-                  {...register("captcha")}
-                  placeholder="Enter captcha"
-                  className="w-[220px] border border-[#4c90ff] rounded-lg py-2 px-3 outline-none focus:ring-2 focus:ring-blue-500"
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF] z-10">
+                  <Calendar size={18} />
+                </span>
+                <DatePicker
+                  selected={selectedDate}
+                  onChange={handleDateChange}
+                  dateFormat="dd-MM-yyyy"
+                  placeholderText="DD-MM-YYYY"
+                  className="w-full py-3 border border-[#4c90ff] rounded-lg pl-11 pr-4 text-[15px] outline-none focus:border-[#003A2B] transition-colors"
+                  showYearDropdown
+                  showMonthDropdown
+                  dropdownMode="select"
+                  maxDate={new Date()}
+                  minDate={new Date(new Date().getFullYear() - 100, 0, 1)}
+                  isClearable
+                  shouldCloseOnSelect
+                  popperClassName="react-datepicker-popper"
                 />
-
-                {errors.captcha && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.captcha.message}
-                  </p>
-                )}
               </div>
+              <div className="text-[11px] text-[#6B7280] mt-1.5">
+                Format: DD-MM-YYYY (e.g., 01-08-2025)
+              </div>
+              {errors.dob && (
+                <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {errors.dob.message}
+                </p>
+              )}
             </div>
 
-            {/* Captcha Display */}
-            <div className="grid grid-cols-12 gap-2">
-              <div className="col-span-5" />
-
-              <div className="col-span-7 flex items-center gap-6">
-                <div className="text-[#0000ff] text-[22px] font-bold italic tracking-widest">
-                  K8W87W
-                </div>
-
+            {/* Captcha Section */}
+            <div className="border border-[#E1E5E3] bg-[#F9FAFB] rounded-lg p-4">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-[13px] font-semibold text-[#4B5563] flex items-center gap-2">
+                  <Shield size={16} />
+                  Security Verification
+                </span>
                 <button
                   type="button"
                   onClick={handleRefreshCaptcha}
-                  className="flex items-center gap-2 text-xs font-bold"
+                  className="flex items-center gap-1 text-[11px] font-bold text-[#003A2B] hover:text-[#002B20] transition-colors"
                 >
-                  Refresh Captcha
-
-                  <span className="bg-blue-600 text-white rounded-full p-1">
-                    ↻
-                  </span>
+                  <RefreshCw size={12} />
+                  Refresh
                 </button>
               </div>
+              
+              <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+                <div className="w-full sm:w-[180px] min-h-[55px] bg-white border border-[#D1D5DB] rounded-lg flex items-center justify-center px-2">
+                  <div className="text-[#0000ff] text-2xl font-bold italic tracking-widest font-mono">
+                    K8W87W
+                  </div>
+                </div>
+
+                <div className="flex-1 relative">
+                  <input
+                    {...register("captcha")}
+                    type="text"
+                    placeholder="Enter CAPTCHA code"
+                    className="w-full h-[48px] border border-[#4c90ff] rounded-lg px-4 text-[15px] outline-none focus:border-[#003A2B] transition-colors"
+                  />
+                </div>
+              </div>
+              {errors.captcha && (
+                <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {errors.captcha.message}
+                </p>
+              )}
             </div>
 
-            {/* Submit */}
-            <div className="text-center pt-6">
-              <button
-                disabled={loading}
-                type="submit"
-                className="bg-[#00008b] hover:bg-blue-900 disabled:bg-blue-400 text-white font-bold tracking-widest text-[16px] px-16 py-3 rounded-lg flex justify-center items-center gap-2 mx-auto min-w-[180px]"
-              >
-                {loading ? (
-                  <>
-                    <Spinner />
-                    Processing...
-                  </>
-                ) : (
-                  "SUBMIT"
-                )}
-              </button>
-            </div>
+            {/* Submit Button */}
+            <button
+              disabled={loading}
+              type="submit"
+              className="w-full py-3 bg-[#003A2B] hover:bg-[#002B20] text-white text-[16px] font-semibold rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <>
+                  <Spinner />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <ArrowRight size={18} />
+                  Submit
+                </>
+              )}
+            </button>
           </form>
+
+          {/* Footer */}
+          <div className="mt-6 pt-4 border-t border-[#E1E5E3] flex items-center justify-center gap-2 text-[#9CA3AF]">
+            <ShieldCheck size={16} />
+            <span className="text-[12px] font-medium">
+              Secure AES-256 Encrypted Portal
+            </span>
+          </div>
         </div>
       </div>
     </div>

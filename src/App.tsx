@@ -18,10 +18,11 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         {/* Home page without layout */}
-        <Route path="/" element={<HomePage />} />
+        {/* <Route path="/" element={<HomePage />} /> */}
 
         {/* All routes below will use Layout */}
         <Route element={<Layout />}>
+        <Route path="/" element={<HomePage />} />
           <Route path="/register" element={<RegistrationForm />} />
           <Route path="/header" element={<ApplicationPortalHeader />} />
           <Route path="/personal" element={<PersonalDetailsForm />} />
