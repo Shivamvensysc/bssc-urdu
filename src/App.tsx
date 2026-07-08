@@ -12,6 +12,9 @@ import LivePhotoUpload from "./components/LivePhotoUpload";
 import BSSCLoginPortal from "./pages/BSSCLoginPortal";
 import BSSCForgotPassword from "./pages/BSSCForgotPassword";
 import BSSCForgotRegistration from "./pages/BSSCForgotRegistration";
+import DashboardLayout from "./layout/Dashboard/DashboardLayout";
+import DashboardContent from "./pages/Dashboardcontent";
+import ApplicationFormContent from "./pages/Application";
 
 export default function App() {
   return (
@@ -30,11 +33,17 @@ export default function App() {
           <Route path="/education" element={<Qualification />} />
           <Route path="/liveupload" element={<LivePhotoUpload />} />
           <Route path="/login" element={<BSSCLoginPortal />} />
-          <Route path="/forgotpassword" element={<BSSCForgotPassword />} />
+          <Route path="/forgot-password" element={<BSSCForgotPassword />} />
           <Route
-            path="/forgotregistration"
+            path="/forgot-registration"
             element={<BSSCForgotRegistration />}
           />
+        </Route>
+
+        <Route element={<DashboardLayout />}>
+          <Route path="/dashboard" element={<DashboardContent />} />
+
+          <Route path="/application" element={<ApplicationFormContent />} />
         </Route>
       </Routes>
     </BrowserRouter>
