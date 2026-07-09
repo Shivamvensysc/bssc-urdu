@@ -449,11 +449,11 @@ export const BSSCLoginPortal: React.FC = () => {
 
   return (
     <div
-      className="min-h-screen px-4 py-8 flex flex-col items-center justify-center gap-6"
+      className="min-h-screen px-4 py-8 md:pb-32 flex flex-col items-center justify-center gap-6"
       style={{ background: PAPER }}
     >
-      <div className="w-full max-w-[1100px] mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="w-full max-w-[1100px]  mx-auto">
+        <div className="grid  grid-cols-1 lg:grid-cols-12 gap-6">
           {/* LEFT BAR: External Links Menu */}
           <div className="lg:col-span-3">
             <div
