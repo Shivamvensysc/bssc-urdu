@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import axios from "axios";
 import {
   Mail,
   Phone,
@@ -12,6 +13,22 @@ import {
   Search,
 } from "lucide-react";
 import DateSelect from "../components/common/DateSelect";
+
+// BASE_URL for API requests
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+
+// Type definitions for API responses
+interface CaptchaResponse {
+  success: boolean;
+  message?: string;
+  captchaId: string;
+  captchaSvg: string;
+}
+
+interface CaptchaValidateResponse {
+  success: boolean;
+  message?: string;
+}
 
 // Import colors from registration page design system
 const INK = "#12233F";
@@ -74,6 +91,14 @@ const BSSCForgotRegistration: React.FC = () => {
     dobYear: false,
   });
 
+  // CAPTCHA State Variables
+  const [captchaId, setCaptchaId] = useState<string>("");
+  const [captchaSvg, setCaptchaSvg] = useState<string>("");
+  const [captcha, setCaptcha] = useState<string>("");
+  const [captchaLoading, setCaptchaLoading] = useState<boolean>(false);
+  const [isValidatingCaptcha, setIsValidatingCaptcha] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+
   const {
     register,
     handleSubmit,
@@ -81,6 +106,7 @@ const BSSCForgotRegistration: React.FC = () => {
     setValue,
     trigger,
     clearErrors,
+    setError: setFormError,
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     mode: "onBlur",
@@ -94,8 +120,85 @@ const BSSCForgotRegistration: React.FC = () => {
     },
   });
 
+  // ── CAPTCHA helpers ───────────────────────────────────────────
+  const fetchCaptcha = async () => {
+    try {
+      setCaptchaLoading(true);
+      const response = await axios.get<CaptchaResponse>(
+        `${BASE_URL}/auth/captcha`
+      );
+      const data = response.data;
+
+      if (!response.status || !data.success) {
+        throw new Error(data.message || "Failed to load CAPTCHA");
+      }
+
+      setCaptchaId(data.captchaId);
+      setCaptchaSvg(data.captchaSvg);
+      setCaptcha("");
+      setValue("captcha", "");
+      setError("");
+    } catch (error: any) {
+      console.error("CAPTCHA error:", error);
+      setError(error?.message || "Failed to load CAPTCHA. Please refresh.");
+    } finally {
+      setCaptchaLoading(false);
+    }
+  };
+
+  const validateCaptcha = async (): Promise<boolean> => {
+    if (!captchaId) {
+      setError("Please refresh CAPTCHA");
+      return false;
+    }
+
+    if (!captcha.trim()) {
+      setError("Please enter CAPTCHA");
+      return false;
+    }
+
+    try {
+      setIsValidatingCaptcha(true);
+      const response = await axios.post<CaptchaValidateResponse>(
+        `${BASE_URL}/auth/captcha/validate`,
+        {
+          captchaId: captchaId,
+          captchaText: captcha.trim(),
+        },
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      const data = response.data;
+
+      if (!response.status || !data.success) {
+        const errorMsg = data.message || "Invalid CAPTCHA. Please try again.";
+        setError(errorMsg);
+        setFormError("captcha", { type: "manual", message: errorMsg });
+        await fetchCaptcha();
+        return false;
+      }
+
+      return true;
+    } catch (error: any) {
+      console.error("CAPTCHA validation error:", error);
+      const errorMsg = error?.message || "Failed to validate CAPTCHA";
+      setError(errorMsg);
+      setFormError("captcha", { type: "manual", message: errorMsg });
+      await fetchCaptcha();
+      return false;
+    } finally {
+      setIsValidatingCaptcha(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCaptcha();
+  }, []);
+
   const handleRefreshCaptcha = () => {
-    console.log("Refresh captcha");
+    fetchCaptcha();
   };
 
   // DateSelect handlers
@@ -122,6 +225,10 @@ const BSSCForgotRegistration: React.FC = () => {
   };
 
   const onSubmit = async (data: FormData) => {
+    // Validate CAPTCHA before submitting form payload
+    const isCaptchaValid = await validateCaptcha();
+    if (!isCaptchaValid) return;
+
     setLoading(true);
 
     await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -131,6 +238,7 @@ const BSSCForgotRegistration: React.FC = () => {
       mobile: data.mobile,
       dob: `${data.dobYear}-${data.dobMonth.padStart(2, "0")}-${data.dobDay.padStart(2, "0")}`,
       captcha: data.captcha,
+      captchaId: captchaId,
     });
 
     setLoading(false);
@@ -288,58 +396,76 @@ const BSSCForgotRegistration: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleRefreshCaptcha}
-                  className="flex items-center gap-1 text-[11px] font-bold transition-colors"
+                  disabled={captchaLoading}
+                  className="flex items-center gap-1 text-[11px] font-bold transition-colors disabled:opacity-50"
                   style={{ color: OCHRE_DEEP }}
                 >
-                  <RefreshCw size={12} />
+                  <RefreshCw size={12} className={captchaLoading ? "animate-spin" : ""} />
                   Refresh
                 </button>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+                {/* SVG Render Box */}
                 <div
-                  className="w-full sm:w-[180px] min-h-[55px] border rounded-lg flex items-center justify-center overflow-hidden px-2"
+                  className="w-full sm:w-[180px] min-h-[55px] border rounded-lg flex items-center justify-center overflow-hidden px-2 relative"
                   style={{ background: CARD, borderColor: LINE }}
                 >
-                  <div
-                    className="text-2xl font-bold tracking-widest"
-                    style={{ color: INK }}
-                  >
-                    K8W87W
-                  </div>
+                  {captchaLoading ? (
+                    <Spinner />
+                  ) : captchaSvg ? (
+                    <div
+                      className="w-full h-full flex items-center justify-center [&>svg]:w-full [&>svg]:h-auto"
+                      dangerouslySetInnerHTML={{ __html: captchaSvg }}
+                    />
+                  ) : (
+                    <span className="text-xs text-gray-400">No CAPTCHA</span>
+                  )}
                 </div>
 
                 <div className="flex-1 relative">
                   <input
                     {...register("captcha")}
                     type="text"
+                    value={captcha}
                     placeholder="Enter CAPTCHA code"
                     className="w-full h-[48px] border rounded-lg px-4 text-[15px] outline-none transition-colors"
                     style={{ borderColor: LINE, color: INK }}
                     onFocus={(e) => (e.target.style.borderColor = OCHRE)}
-                    onBlur={(e) => (e.target.style.borderColor = LINE)}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = LINE;
+                      register("captcha").onBlur(e);
+                    }}
+                    onChange={(e) => {
+                      setCaptcha(e.target.value);
+                      setValue("captcha", e.target.value);
+                      if (error) setError("");
+                      clearErrors("captcha");
+                    }}
                   />
                 </div>
               </div>
-              {errors.captcha && (
+
+              {/* CAPTCHA Error Display */}
+              {(errors.captcha || error) && (
                 <p
                   className="flex items-center gap-1 text-xs mt-2"
                   style={{ color: DANGER }}
                 >
                   <AlertCircle className="h-3 w-3" />
-                  {errors.captcha.message}
+                  {errors.captcha?.message || error}
                 </p>
               )}
             </div>
 
             {/* Submit Button */}
             <button
-              disabled={loading}
+              disabled={loading || isValidatingCaptcha || captchaLoading}
               type="submit"
               className="w-full py-3 text-white text-[16px] font-semibold rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ background: loading ? INK_SOFT : INK }}
+              style={{ background: loading || isValidatingCaptcha ? INK_SOFT : INK }}
             >
-              {loading ? (
+              {loading || isValidatingCaptcha ? (
                 <>
                   <Spinner />
                   Processing...

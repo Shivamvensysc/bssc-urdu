@@ -21,6 +21,7 @@ import {
   Clock,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { generateApplicationPDF } from "../lib/pdfGenerator";
 
 const MOCK_CANDIDATE = {
   registrationNo: "5250000005",
@@ -349,12 +350,58 @@ export default function DashboardContent() {
   >("application");
   const [isDownloading, setIsDownloading] = useState(false);
 
-  const handleDownloadPDF = async () => {
+const handleDownloadPDF = async () => {
     setIsDownloading(true);
     try {
-      await new Promise((r) => setTimeout(r, 900)); // placeholder for real PDF generation call
+      const mockFormData = {
+        personal: {
+          applicantName: MOCK_CANDIDATE.name,
+          fatherName: MOCK_CANDIDATE.fatherName,
+          motherName: MOCK_CANDIDATE.motherName,
+          gender: MOCK_CANDIDATE.gender as 'MALE' | 'FEMALE' | 'TRANSGENDER',
+          dateOfBirth: MOCK_CANDIDATE.dob,
+          nationality: 'INDIAN',
+          emailId: MOCK_CANDIDATE.email,
+          category: 'EBC' as const,
+          caste: 'KUSHWAHA',
+          domicileOfBihar: 'YES' as const,
+          disability: 'NO' as const,
+          exServiceman: 'NO' as const,
+          nccCadet: 'NO' as const,
+          biharGovtEmployee: 'NO' as const,
+          numberOfAttempts: '1',
+          contractualEmployee: 'NO' as const,
+          wardOfFreedomFighter: 'NO' as const,
+          hasAadharCard: 'YES' as const,
+          isDebarred: 'NO' as const,
+          permVillage: 'WARD NO. 12, RAJENDRA NAGAR',
+          permPoliceStation: 'RAJENDRA NAGAR',
+          permPostOffice: 'BORING ROAD',
+          permDistrict: 'PATNA',
+          permState: 'BIHAR',
+          permPinCode: '800016',
+          corrVillage: 'WARD NO. 12, RAJENDRA NAGAR',
+          corrPoliceStation: 'RAJENDRA NAGAR',
+          corrPostOffice: 'BORING ROAD',
+          corrDistrict: 'PATNA',
+          corrState: 'BIHAR',
+          corrPinCode: '800016',
+        },
+        payment: { paymentMode: 'NET_BANKING' as const, paymentAcknowledged: true },
+        education: {
+          tenth: { subject: 'GENERAL', boardUniversity: 'BSEB PATNA', totalMarks: '500', obtainedMarks: '425', percentage: '85.00', certNumber: 'BSEB2018001234', certIssueDate: '2018-06-15' },
+          twelfth: { subject: 'SCIENCE', boardUniversity: 'BSEB PATNA', totalMarks: '500', obtainedMarks: '440', percentage: '88.00', certNumber: 'BSEB2020005678', certIssueDate: '2020-06-20' },
+          graduation: { subject: 'B.SC MATHEMATICS', boardUniversity: 'PATNA UNIVERSITY', totalMarks: '600', obtainedMarks: '510', percentage: '85.00', certNumber: 'PU2023009876', certIssueDate: '2023-07-10' },
+        },
+        photos: {},
+        livePhoto: {},
+      };
+      await generateApplicationPDF(mockFormData, {
+        registrationNo: MOCK_CANDIDATE.registrationNo,
+        name: MOCK_CANDIDATE.name,
+      });
     } catch {
-      alert("PDF generation failed. Please try again.");
+      alert('PDF generation failed. Please try again.');
     } finally {
       setIsDownloading(false);
     }
