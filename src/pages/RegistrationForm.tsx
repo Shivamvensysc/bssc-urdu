@@ -11585,6 +11585,8 @@
 //   );
 // }
 
+
+
 import React, {
   useState,
   useEffect,
@@ -11603,8 +11605,10 @@ import {
   Loader2,
   PartyPopper,
   AlertCircle,
+  Lock,
+  KeyRound
 } from "lucide-react";
-import { sendOtp, verifyOtp, resendOtp, calcDuration } from "../auth/cognito";
+import { sendOtp, verifyOtp, resendOtp, calcDuration,confirmSetPassword,triggerSetPassword, } from "../auth/cognito";
 import type { RegistrationFormData, DurationParts } from "../auth/cognito";
 import OTPVerificationModal from "../components/common/OTPVerificationModal";
 import DateSelect from "../components/common/DateSelect";
@@ -11625,6 +11629,7 @@ import {
   type ExOfficerType,
   type Disability,
 } from "../api/registrationApi";
+import { useNavigate } from "react-router-dom";
 
 const INK = "#12233F";
 const INK_SOFT = "#5B6B84";
@@ -11740,6 +11745,12 @@ export interface FormData extends RegistrationFormData {
   serviceToMonth: string;
   serviceToYear: string;
    natureOfDisabilityType: string; 
+   contractualFromDay: string;
+  contractualFromMonth: string;
+  contractualFromYear: string;
+  contractualToDay: string;
+  contractualToMonth: string;
+  contractualToYear: string;
 }
 
 type FormErrors = Partial<Record<keyof FormData, string>>;
@@ -11834,6 +11845,12 @@ const CONDITIONAL_FIELDS: (keyof FormData)[] = [
   "officerType",
   "contractualFromDate",
   "contractualToDate",
+  "contractualFromDay",
+  "contractualFromMonth",
+  "contractualFromYear",
+  "contractualToDay",
+  "contractualToMonth",
+  "contractualToYear",
 ];
 
 const initialData: FormData = {
@@ -11894,6 +11911,14 @@ const initialData: FormData = {
   disabilityAuthority: "",
   disabilityAuthorityOther: "",
   // Scribe fields
+  contractualFromDay: "",
+  contractualFromMonth: "",
+  contractualFromYear: "",
+  contractualToDay: "",
+  contractualToMonth: "",
+  contractualToYear: "",
+
+
   isScribeRequired: "",
   natureOfDisabilityType: "",
 };
@@ -12095,77 +12120,12 @@ const SelectBox: React.FC<SelectBoxProps> = ({
   </div>
 );
 
-/**
- * ── BUG FIX ────────────────────────────────────────────────────────
- * This component was referenced (`<DateRangeField .../>`) in the
- * contractual-employment section but was never defined or imported
- * anywhere in the file. That throws a ReferenceError the moment
- * `isContractualEmployee === "YES"`, which is very likely what you were
- * seeing as "validation doesn't work" — the component tree below it
- * (including CAPTCHA / submit) stops rendering/updating correctly.
- *
- * `contractualFromDate` / `contractualToDate` are plain ISO date strings
- * (not day/month/year triplets like DOB), so this uses simple native
- * date inputs and plugs into the existing generic `handleChange`/
- * `handleBlur` handlers by `name`, exactly like every other field.
- */
-interface DateRangeFieldProps {
-  fromName: string;
-  toName: string;
-  fromValue: string;
-  toValue: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onBlur: (e: React.FocusEvent<HTMLInputElement>) => void;
-}
-
-const DateRangeField: React.FC<DateRangeFieldProps> = ({
-  fromName,
-  toName,
-  fromValue,
-  toValue,
-  onChange,
-  onBlur,
-}) => (
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <div>
-      <div
-        className="text-[11px] font-extrabold tracking-wide mb-1.5"
-        style={{ color: INK_SOFT }}
-      >
-        From Date · दिनांक से
-      </div>
-      <input
-        type="date"
-        name={fromName}
-        value={fromValue}
-        onChange={onChange}
-        onBlur={onBlur}
-        className="rf-input"
-      />
-    </div>
-    <div>
-      <div
-        className="text-[11px] font-extrabold tracking-wide mb-1.5"
-        style={{ color: INK_SOFT }}
-      >
-        To Date · दिनांक तक
-      </div>
-      <input
-        type="date"
-        name={toName}
-        value={toValue}
-        onChange={onChange}
-        onBlur={onBlur}
-        className="rf-input"
-      />
-    </div>
-  </div>
-);
 
 /* ---------------------------------------------------------------
    MAIN COMPONENT
 --------------------------------------------------------------- */
 export default function GovernmentRegistrationForm(): React.ReactElement {
+    const navigate=useNavigate();
   const [data, setData] = useState<FormData>(initialData);
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<FormTouched>({});
@@ -12201,6 +12161,74 @@ export default function GovernmentRegistrationForm(): React.ReactElement {
 
   const [showOtp, setShowOtp] = useState(false);
   const [submitError, setSubmitError] = useState("");
+
+ /* ---------- Set Password step (shown right after OTP verification succeeds) ---------- */
+  const [showSetPassword, setShowSetPassword] = useState(false);
+  const [spCode, setSpCode] = useState("");
+  const [spPassword, setSpPassword] = useState("");
+  const [spConfirmPassword, setSpConfirmPassword] = useState("");
+  const [spError, setSpError] = useState("");
+  const [spInfo, setSpInfo] = useState("");
+  const [spLoading, setSpLoading] = useState(false);
+  const [spSuccess, setSpSuccess] = useState(false);
+
+
+  /* ---------- Set Password step callbacks ---------- */
+  const handleResendSetPasswordCode = async () => {
+    setSpError("");
+    try {
+      await triggerSetPassword(data.emailId);
+      setSpInfo(`A new verification code was sent to ${data.emailId}.`);
+    } catch (err: any) {
+      setSpError(err?.message || "Could not resend code. Please try again.");
+    }
+  };
+
+  const handleSetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSpError("");
+
+    if (!spCode.trim()) {
+      setSpError("Please enter the verification code sent to your email.");
+      return;
+    }
+    if (spPassword.length < 8) {
+      setSpError("Password must be at least 8 characters.");
+      return;
+    }
+    if (spPassword !== spConfirmPassword) {
+      setSpError("Passwords do not match.");
+      return;
+    }
+
+    setSpLoading(true);
+    try {
+      await confirmSetPassword(data.emailId, spCode, spPassword);
+      setSpSuccess(true);
+      // Brief confirmation, then send the candidate to log in with their new password.
+      setTimeout(() => {
+        navigate("/login");
+      }, 1500);
+    } catch (err: any) {
+      const code = err?.name || err?.code;
+      if (code === "CodeMismatchException") {
+        setSpError("The verification code is incorrect. Please check and try again.");
+      } else if (code === "ExpiredCodeException") {
+        setSpError("This code has expired. Please request a new one.");
+      } else if (code === "InvalidPasswordException") {
+        setSpError(
+          err?.message ||
+            "Password does not meet requirements. Try a longer password with a mix of letters, numbers, and symbols.",
+        );
+      } else {
+        setSpError(err?.message || "Could not set password. Please try again.");
+      }
+    } finally {
+      setSpLoading(false);
+    }
+  };
+
+
 
   // ── Fetch Categories ───────────────────────────────────────────
   const fetchCategories = async () => {
@@ -12356,10 +12384,16 @@ export default function GovernmentRegistrationForm(): React.ReactElement {
       data.serviceToDay, data.serviceToMonth, data.serviceToYear]);
 
   // Calculate contractual employment duration (parity with service/NCC duration displays)
-  const contractualDuration = useMemo<DurationParts | null>(() => {
-    if (!data.contractualFromDate || !data.contractualToDate) return null;
-    return calcDuration(data.contractualFromDate, data.contractualToDate);
-  }, [data.contractualFromDate, data.contractualToDate]);
+ const contractualDuration = useMemo<DurationParts | null>(() => {
+  if (!data.contractualFromDay || !data.contractualFromMonth || !data.contractualFromYear ||
+      !data.contractualToDay || !data.contractualToMonth || !data.contractualToYear) {
+    return null;
+  }
+  const fromIso = `${data.contractualFromYear}-${pad2(data.contractualFromMonth)}-${pad2(data.contractualFromDay)}`;
+  const toIso = `${data.contractualToYear}-${pad2(data.contractualToMonth)}-${pad2(data.contractualToDay)}`;
+  return calcDuration(fromIso, toIso);
+}, [data.contractualFromDay, data.contractualFromMonth, data.contractualFromYear,
+    data.contractualToDay, data.contractualToMonth, data.contractualToYear]);
 
   /**
    * Full age-eligibility decision per the "Age Eligibility Validation Matrix"
@@ -12423,6 +12457,7 @@ export default function GovernmentRegistrationForm(): React.ReactElement {
         case "isBiharDomicile":
           return value ? "" : "Domicile status is required";
         case "category":
+             if (all.isBiharDomicile === "NO") return "";
           if (!value) return "Category is required";
           if (
             all.gender === "TRANSGENDER" &&
@@ -12433,6 +12468,7 @@ export default function GovernmentRegistrationForm(): React.ReactElement {
           }
           return "";
         case "caste":
+             if (all.isBiharDomicile === "NO") return "";
           // Check if subCategories exist for selected category
           const selectedCat = categories.find(
             (c) => c.value === parseInt(all.categoryId)
@@ -12442,16 +12478,20 @@ export default function GovernmentRegistrationForm(): React.ReactElement {
           }
           return ""; // No caste selection needed if no subcategories
         case "isNonCreamyLayer":
+             if (all.isBiharDomicile === "NO") return "";
           return value ? "" : "Non-creamy layer status is required";
         case "isPwD":
+             if (all.isBiharDomicile === "NO") return "";
           return value ? "" : "PWD status is required";
         case "isMin40PercentPwD":
+             if (all.isBiharDomicile === "NO") return "";
           if (!value) return "This field is required";
           if (value === "YES" && all.isExServiceman === "YES") {
             return "Cannot claim PwBD (40%+ disability) relaxation together with ex-serviceman relaxation. Choose one.";
           }
           return "";
         case "isExServiceman":
+             if (all.isBiharDomicile === "NO") return "";
           if (!value) return "Ex-serviceman status is required";
           if (
             value === "YES" &&
@@ -12467,6 +12507,7 @@ export default function GovernmentRegistrationForm(): React.ReactElement {
         case "serviceToDay":
         case "serviceToMonth":
         case "serviceToYear":
+             if (all.isBiharDomicile === "NO") return "";
           if (all.isExServiceman === "YES") {
             if (!all.serviceFromDay || !all.serviceFromMonth || !all.serviceFromYear ||
                 !all.serviceToDay || !all.serviceToMonth || !all.serviceToYear) {
@@ -12490,11 +12531,13 @@ export default function GovernmentRegistrationForm(): React.ReactElement {
           }
           return "";
         case "officerType":
+             if (all.isBiharDomicile === "NO") return "";
           if (all.isExServiceman === "YES" && !value) {
             return "Select the officer / ex-serviceman category";
           }
           return "";
         case "isNccCadet":
+             if (all.isBiharDomicile === "NO") return "";
           return value ? "" : "NCC cadet status is required";
         case "nccWorkingFromDay":
         case "nccWorkingFromMonth":
@@ -12502,6 +12545,7 @@ export default function GovernmentRegistrationForm(): React.ReactElement {
         case "nccWorkingToDay":
         case "nccWorkingToMonth":
         case "nccWorkingToYear":
+             if (all.isBiharDomicile === "NO") return "";
           if (all.isNccCadet === "YES") {
             if (!all.nccWorkingFromDay || !all.nccWorkingFromMonth || !all.nccWorkingFromYear ||
                 !all.nccWorkingToDay || !all.nccWorkingToMonth || !all.nccWorkingToYear) {
@@ -12525,20 +12569,45 @@ export default function GovernmentRegistrationForm(): React.ReactElement {
           }
           return "";
         case "isBiharGovtEmployee":
+             if (all.isBiharDomicile === "NO") return "";
           return value ? "" : "This field is required";
         case "bsscAttempts":
+             if (all.isBiharDomicile === "NO") return "";
           return value ? "" : "Number of attempts is required";
         case "isContractualEmployee":
+             if (all.isBiharDomicile === "NO") return "";
           return value ? "" : "This field is required";
         case "contractualFromDate":
-        case "contractualToDate":
-          if (
-            all.isContractualEmployee === "YES" &&
-            (!all.contractualFromDate || !all.contractualToDate)
-          ) {
-            return "Contractual service period is required";
-          }
-          return "";
+case "contractualToDate":
+case "contractualFromDay":
+case "contractualFromMonth":
+case "contractualFromYear":
+case "contractualToDay":
+case "contractualToMonth":
+case "contractualToYear":
+     if (all.isBiharDomicile === "NO") return "";
+  if (all.isContractualEmployee === "YES") {
+    if (!all.contractualFromDay || !all.contractualFromMonth || !all.contractualFromYear ||
+        !all.contractualToDay || !all.contractualToMonth || !all.contractualToYear) {
+      return "Complete contractual service period is required";
+    }
+    // Validate that from date is before to date
+    const fromDate = new Date(
+      parseInt(all.contractualFromYear),
+      parseInt(all.contractualFromMonth) - 1,
+      parseInt(all.contractualFromDay)
+    );
+    const toDate = new Date(
+      parseInt(all.contractualToYear),
+      parseInt(all.contractualToMonth) - 1,
+      parseInt(all.contractualToDay)
+    );
+    if (fromDate > toDate) {
+      return "From date must be before to date";
+    }
+    return "";
+  }
+  return "";
         case "mobileNo":
           if (!value) return "Mobile number is required";
           return /^[6-9]\d{9}$/.test(value)
@@ -12570,6 +12639,7 @@ export default function GovernmentRegistrationForm(): React.ReactElement {
         case "categoryIssueDateDay":
         case "categoryIssueDateMonth":
         case "categoryIssueDateYear":
+             if (all.isBiharDomicile === "NO") return "";
           if (
             all.isBiharDomicile === "YES" &&
             all.category !== "" &&
@@ -12580,6 +12650,7 @@ export default function GovernmentRegistrationForm(): React.ReactElement {
           }
           return "";
         case "categoryAuthority":
+             if (all.isBiharDomicile === "NO") return "";
           if (
             all.isBiharDomicile === "YES" &&
             all.category !== "" &&
@@ -12602,11 +12673,13 @@ export default function GovernmentRegistrationForm(): React.ReactElement {
         case "disabilityIssueDateDay":
         case "disabilityIssueDateMonth":
         case "disabilityIssueDateYear":
+             if (all.isBiharDomicile === "NO") return "";
           if (all.isBiharDomicile === "YES" && all.isPwD === "YES" && !all.disabilityCertNo) {
             return "Disability certificate details are required";
           }
           return "";
         case "disabilityAuthority":
+             if (all.isBiharDomicile === "NO") return "";
           if (all.isBiharDomicile === "YES" && all.isPwD === "YES" && !value) {
             return "Issuing authority is required";
           }
@@ -12620,6 +12693,7 @@ export default function GovernmentRegistrationForm(): React.ReactElement {
           }
           return "";
         case "isScribeRequired":
+             if (all.isBiharDomicile === "NO") return "";
           if (all.isBiharDomicile === "YES" && all.isPwD === "YES" && all.isMin40PercentPwD === "YES" && !value) {
             return "Please specify if scribe is required";
           }
@@ -12691,6 +12765,50 @@ export default function GovernmentRegistrationForm(): React.ReactElement {
       const urCategory = categories.find(
         (c) => c.label.includes("Unreserved") || c.label.includes("गैर आरक्षित")
       );
+
+        // Clear validation errors for hidden fields
+  setErrors((prev) => ({
+    ...prev,
+    isExServiceman: "",
+    serviceFromDay: "",
+    serviceFromMonth: "",
+    serviceFromYear: "",
+    serviceToDay: "",
+    serviceToMonth: "",
+    serviceToYear: "",
+    officerType: "",
+    isNccCadet: "",
+    nccWorkingFromDay: "",
+    nccWorkingFromMonth: "",
+    nccWorkingFromYear: "",
+    nccWorkingToDay: "",
+    nccWorkingToMonth: "",
+    nccWorkingToYear: "",
+    isBiharGovtEmployee: "",
+    bsscAttempts: "",
+    isContractualEmployee: "",
+    contractualFromDate: "",
+    contractualToDate: "",
+    contractualFromDay: "",
+    contractualFromMonth: "",
+    contractualFromYear: "",
+    contractualToDay: "",
+    contractualToMonth: "",
+    contractualToYear: "",
+    categoryCertNo: "",
+    categoryIssueDateDay: "",
+    categoryIssueDateMonth: "",
+    categoryIssueDateYear: "",
+    categoryAuthority: "",
+    categoryAuthorityOther: "",
+    disabilityCertNo: "",
+    disabilityIssueDateDay: "",
+    disabilityIssueDateMonth: "",
+    disabilityIssueDateYear: "",
+    disabilityAuthority: "",
+    disabilityAuthorityOther: "",
+    isScribeRequired: "",
+  }));
      
       next.category = urCategory ? urCategory.label : "UR";
       next.categoryId = urCategory ? String(urCategory.value) : "";
@@ -12730,6 +12848,13 @@ export default function GovernmentRegistrationForm(): React.ReactElement {
       next.hasAgreement = "";
       next.contractualFromDate = "";
       next.contractualToDate = "";
+      // Add these new fields
+next.contractualFromDay = "";
+next.contractualFromMonth = "";
+next.contractualFromYear = "";
+next.contractualToDay = "";
+next.contractualToMonth = "";
+next.contractualToYear = "";
     }
    
     // If domicile is set to YES, set category to empty (so user can select)
@@ -13201,6 +13326,60 @@ export default function GovernmentRegistrationForm(): React.ReactElement {
     setErrors((prev) => ({ ...prev, [formField]: msg }));
   };
 
+  // DateSelect handlers for Contractual From Date
+const handleContractualFromDateChange = (field: "day" | "month" | "year", value: string) => {
+  const fieldMap = {
+    day: "contractualFromDay",
+    month: "contractualFromMonth",
+    year: "contractualFromYear"
+  };
+  const formField = fieldMap[field];
+  setData((prev) => ({ ...prev, [formField]: value }));
+  if (touched[formField]) {
+    const msg = validateField(formField, value, data);
+    setErrors((prev) => ({ ...prev, [formField]: msg }));
+  }
+};
+
+const handleContractualFromDateBlur = (field: "day" | "month" | "year") => {
+  const fieldMap = {
+    day: "contractualFromDay",
+    month: "contractualFromMonth",
+    year: "contractualFromYear"
+  };
+  const formField = fieldMap[field];
+  setTouched((prev) => ({ ...prev, [formField]: true }));
+  const msg = validateField(formField, data[formField], data);
+  setErrors((prev) => ({ ...prev, [formField]: msg }));
+};
+
+// DateSelect handlers for Contractual To Date
+const handleContractualToDateChange = (field: "day" | "month" | "year", value: string) => {
+  const fieldMap = {
+    day: "contractualToDay",
+    month: "contractualToMonth",
+    year: "contractualToYear"
+  };
+  const formField = fieldMap[field];
+  setData((prev) => ({ ...prev, [formField]: value }));
+  if (touched[formField]) {
+    const msg = validateField(formField, value, data);
+    setErrors((prev) => ({ ...prev, [formField]: msg }));
+  }
+};
+
+const handleContractualToDateBlur = (field: "day" | "month" | "year") => {
+  const fieldMap = {
+    day: "contractualToDay",
+    month: "contractualToMonth",
+    year: "contractualToYear"
+  };
+  const formField = fieldMap[field];
+  setTouched((prev) => ({ ...prev, [formField]: true }));
+  const msg = validateField(formField, data[formField], data);
+  setErrors((prev) => ({ ...prev, [formField]: msg }));
+};
+
   /* ---------- submit: create Cognito user, then ask for email OTP ---------- */
   const handleSubmit = async () => {
     // First validate CAPTCHA
@@ -13268,19 +13447,36 @@ export default function GovernmentRegistrationForm(): React.ReactElement {
   };
 
   /* ---------- OTP modal callbacks ---------- */
-  const handleOtpVerify = async (otp: string) => {
-    await verifyOtp(data.emailId, otp);
-    console.log("Registration payload:", {
-      ...data,
-      dob: `${data.dobYear}-${pad2(data.dobMonth)}-${pad2(data.dobDay)}`,
-      serviceFrom: `${data.serviceFromYear}-${pad2(data.serviceFromMonth)}-${pad2(data.serviceFromDay)}`,
-      serviceTo: `${data.serviceToYear}-${pad2(data.serviceToMonth)}-${pad2(data.serviceToDay)}`,
-      age,
-      ageEligibility,
-    });
-    setSubmitted(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+//   const handleOtpVerify = async (otp: string) => {
+//     await verifyOtp(data.emailId, otp);
+//     console.log("Registration payload:", {
+//       ...data,
+//       dob: `${data.dobYear}-${pad2(data.dobMonth)}-${pad2(data.dobDay)}`,
+//       serviceFrom: `${data.serviceFromYear}-${pad2(data.serviceFromMonth)}-${pad2(data.serviceFromDay)}`,
+//       serviceTo: `${data.serviceToYear}-${pad2(data.serviceToMonth)}-${pad2(data.serviceToDay)}`,
+//       age,
+//       ageEligibility,
+//     });
+//     setSubmitted(true);
+//     window.scrollTo({ top: 0, behavior: "smooth" });
+//   };
+
+const handleOtpVerify = async (otp: string) => {
+  await verifyOtp(data.emailId, otp);
+  console.log("Registration payload:", {
+    ...data,
+    dob: `${data.dobYear}-${pad2(data.dobMonth)}-${pad2(data.dobDay)}`,
+    serviceFrom: `${data.serviceFromYear}-${pad2(data.serviceFromMonth)}-${pad2(data.serviceFromDay)}`,
+    serviceTo: `${data.serviceToYear}-${pad2(data.serviceToMonth)}-${pad2(data.serviceToDay)}`,
+    age,
+    ageEligibility,
+  });
+  // Close OTP modal and show Set Password screen
+  setShowOtp(false);
+  setShowSetPassword(true);
+  setSpInfo(`A verification code has been sent to ${data.emailId}. Please check your email.`);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
 
   const handleOtpResend = async () => {
     await resendOtp(data.emailId);
@@ -13324,6 +13520,157 @@ export default function GovernmentRegistrationForm(): React.ReactElement {
 
   // Authority options for dropdown
   const authorityOptions = ["SO", "DM", "RO", "Other"];
+
+
+    /* ---------------------------------------------------------------
+     SET PASSWORD STATE — shown right after OTP verification succeeds,
+     before the candidate is sent to /login
+  --------------------------------------------------------------- */
+  if (showSetPassword) {
+    return (
+      <div
+        className="rf-root min-h-screen flex items-center justify-center p-6"
+        style={{ background: PAPER }}
+      >
+        <style>{FONTS}</style>
+        <div
+          className="rf-pop max-w-md w-full bg-white rounded-2xl p-8 md:p-10 shadow-sm"
+          style={{ border: `1.5px solid ${LINE}` }}
+        >
+          {spSuccess ? (
+            <div className="text-center">
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
+                style={{ background: "#E8F3EF" }}
+              >
+                <CheckCircle2 size={28} style={{ color: TEAL }} />
+              </div>
+              <div
+                className="rf-display text-2xl font-semibold mb-2"
+                style={{ color: INK }}
+              >
+                Password set successfully
+              </div>
+              <p className="text-sm font-medium" style={{ color: INK_SOFT }}>
+                Redirecting you to login...
+              </p>
+            </div>
+          ) : (
+            <>
+              <div
+                className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-5"
+                style={{ background: "#EFEAE0" }}
+              >
+                <Lock size={24} style={{ color: OCHRE_DEEP }} />
+              </div>
+              <div
+                className="rf-display text-2xl font-semibold mb-2 text-center"
+                style={{ color: INK }}
+              >
+                Set Your Password
+              </div>
+              <p
+                className="text-sm font-medium mb-6 text-center"
+                style={{ color: INK_SOFT }}
+              >
+                {spInfo}
+              </p>
+
+              {spError && (
+                <div
+                  className="flex items-center gap-2 mb-4 text-[12.5px] font-bold rounded-lg px-3 py-2.5"
+                  style={{ color: DANGER, background: "#FBEAE6" }}
+                >
+                  <AlertCircle size={14} className="shrink-0" /> {spError}
+                </div>
+              )}
+
+              <form onSubmit={handleSetPasswordSubmit} className="space-y-5">
+                <Field label="Verification code" hi="सत्यापन कोड" required>
+                  <div className="relative">
+                    <span
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2"
+                      style={{ color: INK_SOFT }}
+                    >
+                      <KeyRound size={16} />
+                    </span>
+                    <input
+                      type="text"
+                      value={spCode}
+                      onChange={(e) => setSpCode(e.target.value)}
+                      className="rf-input pl-10 rf-mono"
+                      placeholder="Enter the code emailed to you"
+                    />
+                  </div>
+                </Field>
+
+                <Field label="New password" hi="नया पासवर्ड" required>
+                  <div className="relative">
+                    <span
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2"
+                      style={{ color: INK_SOFT }}
+                    >
+                      <Lock size={16} />
+                    </span>
+                    <input
+                      type="password"
+                      value={spPassword}
+                      onChange={(e) => setSpPassword(e.target.value)}
+                      className="rf-input pl-10"
+                      placeholder="At least 8 characters"
+                    />
+                  </div>
+                </Field>
+
+                <Field label="Confirm password" hi="पासवर्ड की पुष्टि" required>
+                  <div className="relative">
+                    <span
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2"
+                      style={{ color: INK_SOFT }}
+                    >
+                      <Lock size={16} />
+                    </span>
+                    <input
+                      type="password"
+                      value={spConfirmPassword}
+                      onChange={(e) => setSpConfirmPassword(e.target.value)}
+                      className="rf-input pl-10"
+                      placeholder="Re-enter password"
+                    />
+                  </div>
+                </Field>
+
+                <button
+                  type="submit"
+                  disabled={spLoading}
+                  className="w-full py-3 rounded-full font-extrabold text-sm text-white flex items-center justify-center gap-2 transition-opacity"
+                  style={{ background: spLoading ? "#8B93A0" : INK }}
+                >
+                  {spLoading ? (
+                    <>
+                      <Loader2 size={16} className="rf-spin" /> SETTING
+                      PASSWORD…
+                    </>
+                  ) : (
+                    "SET PASSWORD"
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleResendSetPasswordCode}
+                  className="w-full flex items-center justify-center gap-1.5 text-xs font-extrabold"
+                  style={{ color: OCHRE_DEEP }}
+                >
+                  <RefreshCw size={13} /> RESEND CODE
+                </button>
+              </form>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   /* ---------------------------------------------------------------
      SUCCESS STATE
@@ -14388,40 +14735,94 @@ export default function GovernmentRegistrationForm(): React.ReactElement {
                   </Field>
 
                   <Field
-                    label="Contractual service period in Bihar government — from / to date"
-                    hi="उल्लिखित पद पर बिहार सरकार में संविदा सेवा अवधि — दिनांक से/तक"
-                    error={
-                      touched.contractualFromDate && errors.contractualFromDate
-                    }
-                    note="Select the dates on which your contractual engagement began and ended (or the current date, if still ongoing); the duration is calculated automatically."
-                  >
-                    <div>
-                      <DateRangeField
-                        fromName="contractualFromDate"
-                        toName="contractualToDate"
-                        fromValue={data.contractualFromDate}
-                        toValue={data.contractualToDate}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                      />
-                      {contractualDuration && (
-                        <div
-                          className="rounded-lg px-3 py-2 inline-flex items-center gap-2 mt-2"
-                          style={{ background: "#FAF6EF", border: `1px solid #ECD9BE` }}
-                        >
-                          <span
-                            className="text-[11px] font-extrabold tracking-wide"
-                            style={{ color: OCHRE_DEEP }}
-                          >
-                            DURATION · अवधि
-                          </span>
-                          <span className="rf-mono text-sm font-bold" style={{ color: INK }}>
-                            {formatDuration(contractualDuration)}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </Field>
+  label="Contractual service period in Bihar government — from / to date"
+  hi="उल्लिखित पद पर बिहार सरकार में संविदा सेवा अवधि — दिनांक से/तक"
+  error={
+    touched.contractualFromDate && errors.contractualFromDate
+  }
+  note="Select the dates on which your contractual engagement began and ended (or the current date, if still ongoing); the duration is calculated automatically."
+>
+  <div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <div
+          className="text-[11px] font-extrabold tracking-wide mb-1.5"
+          style={{ color: INK_SOFT }}
+        >
+          From Date · दिनांक से
+        </div>
+        <DateSelect
+          value={{
+            day: data.contractualFromDay || "",
+            month: data.contractualFromMonth || "",
+            year: data.contractualFromYear || "",
+          }}
+          onChange={handleContractualFromDateChange}
+          onBlur={handleContractualFromDateBlur}
+          errors={{
+            day: touched.contractualFromDay && errors.contractualFromDay,
+            month: touched.contractualFromMonth && errors.contractualFromMonth,
+            year: touched.contractualFromYear && errors.contractualFromYear,
+          }}
+          touched={{
+            day: touched.contractualFromDay,
+            month: touched.contractualFromMonth,
+            year: touched.contractualFromYear,
+          }}
+          required={true}
+          maxYear={new Date().getFullYear()}
+          minYear={1900}
+        />
+      </div>
+      <div>
+        <div
+          className="text-[11px] font-extrabold tracking-wide mb-1.5"
+          style={{ color: INK_SOFT }}
+        >
+          To Date · दिनांक तक
+        </div>
+        <DateSelect
+          value={{
+            day: data.contractualToDay || "",
+            month: data.contractualToMonth || "",
+            year: data.contractualToYear || "",
+          }}
+          onChange={handleContractualToDateChange}
+          onBlur={handleContractualToDateBlur}
+          errors={{
+            day: touched.contractualToDay && errors.contractualToDay,
+            month: touched.contractualToMonth && errors.contractualToMonth,
+            year: touched.contractualToYear && errors.contractualToYear,
+          }}
+          touched={{
+            day: touched.contractualToDay,
+            month: touched.contractualToMonth,
+            year: touched.contractualToYear,
+          }}
+          required={true}
+          maxYear={new Date().getFullYear()}
+          minYear={1900}
+        />
+      </div>
+    </div>
+    {contractualDuration && (
+      <div
+        className="rounded-lg px-3 py-2 inline-flex items-center gap-2 mt-2"
+        style={{ background: "#FAF6EF", border: `1px solid #ECD9BE` }}
+      >
+        <span
+          className="text-[11px] font-extrabold tracking-wide"
+          style={{ color: OCHRE_DEEP }}
+        >
+          DURATION · अवधि
+        </span>
+        <span className="rf-mono text-sm font-bold" style={{ color: INK }}>
+          {formatDuration(contractualDuration)}
+        </span>
+      </div>
+    )}
+  </div>
+</Field>
                 </>
               )}
             </div>

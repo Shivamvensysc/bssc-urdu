@@ -71,15 +71,12 @@ const mapAddress = (
   addr?: Step0Address | null,
 ) => {
   if (!addr) return;
-  // step0 address shape: { street, city, post, district, state, pincode, country }
   // Step1 address shape: Village / PoliceStation / PostOffice / District / State / PinCode
   if (addr.street) target[`${prefix}Village`] = addr.street;
   if (addr.post) target[`${prefix}PostOffice`] = addr.post;
   if (addr.district) target[`${prefix}District`] = addr.district;
   if (addr.state) target[`${prefix}State`] = addr.state;
   if (addr.pincode) target[`${prefix}PinCode`] = addr.pincode;
-  // step0 has no direct equivalent for "Police Station" — left blank
-  // intentionally so the candidate fills it in.
 };
 
 export const mapStep0ToStep1 = (
@@ -130,6 +127,9 @@ export const mapStep0ToStep1 = (
   // step0 doesn't carry an explicit "domicile of Bihar" flag, so it's
   // intentionally left for the candidate to confirm — it gates the
   // age-relaxation rules and shouldn't be guessed.
+  if (step0.isBiharDomicile !== undefined && step0.isBiharDomicile !== null) {
+  out.domicileOfBihar = step0.isBiharDomicile ? "YES" : "NO";
+}
   if (step0.domicileCertificateNumber) out.domicileCertNo = step0.domicileCertificateNumber;
   if (step0.domicileCertificateAuthority) out.domicileAuthority = step0.domicileCertificateAuthority;
   addDatePrefix(out, "domicileIssueDate", splitAnyDate(step0.domicileCertificateIssueDate));

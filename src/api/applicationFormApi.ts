@@ -122,7 +122,7 @@ export interface Step0Data {
   sportsAchievement: string | null;
   identificationMark1: string | null;
   identificationMark2: string | null;
-  isJharkhandDomicile: boolean | null;
+  isBiharDomicile: boolean | null; 
   pwdCertificateNumber: string | null;
   pwdCertificateAuthority: string | null;
   pwdCertificateIssueDate: string | null;
@@ -227,7 +227,7 @@ export const applicationApi = {
 
   /** payload should include the live-photo upload link (data URL / file URL). */
   saveStep5: (data: any) =>
-    axios.post(`${API_BASE_URL}/auth/candidate/step-5`, data, getAuthHeaders()),
+    axios.post(`${API_BASE_URL}/auth/candidate/step-5`, data, getMultipartHeaders()),
 
   submitApplicationFinal: (applicationId: string) =>
     axios.post(
