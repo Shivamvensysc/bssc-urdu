@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 // import React, {useState,useRef,useCallback,useEffect,} from "react";
 // import  type {ChangeEvent,} from "react";
 // import {
@@ -2216,9 +2216,8 @@
 
 
 
-import React, {useState,useRef,useCallback,useEffect,} from "react";
+
 import  type {ChangeEvent,} from "react";
-=======
 import React, {
   useState,
   useRef,
@@ -2226,8 +2225,6 @@ import React, {
   useEffect,
   useMemo,
 } from "react";
-import type { ChangeEvent } from "react";
->>>>>>> dev
 import {
   User,
   CreditCard,
@@ -2249,11 +2246,8 @@ import {
   Briefcase,
 } from "lucide-react";
 import Webcam from "react-webcam";
-<<<<<<< HEAD
-=======
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
->>>>>>> dev
 
 import type {
   PersonalData,
@@ -3342,7 +3336,7 @@ const Step1Personal: React.FC<
               options={["MALE", "FEMALE", "TRANSGENDER"]}
             />
           </Field>
-<<<<<<< HEAD
+
           <Field
             label="Date of birth"
             hi="जन्म तिथि"
@@ -3378,7 +3372,6 @@ const Step1Personal: React.FC<
           </Field>
           
           {/* Show input field if "Other" is selected for nationality */}
-=======
 
           <Field label="Nationality" hi="राष्ट्रीयता" required>
             <SelectBox
@@ -3396,24 +3389,21 @@ const Step1Personal: React.FC<
               <option value="OTHER">Other</option>
             </SelectBox>
           </Field>
->>>>>>> dev
+
           {v.nationality === "OTHER" && (
             <Field label="Other Nationality" hi="अन्य राष्ट्रीयता" required>
               <input
                 className="gf-input"
                 value={v.otherNationality || ""}
-<<<<<<< HEAD
                 onChange={(e: ChangeEvent<HTMLInputElement>) =>
                   setField("otherNationality", e.target.value)
                 }
-=======
                 onChange={(e: ChangeEvent<HTMLInputElement>) => setField("otherNationality", e.target.value)}
->>>>>>> dev
+
                 placeholder="Enter your nationality"
               />
             </Field>
           )}
-<<<<<<< HEAD
           
           <Field
             label="Email ID"
@@ -3421,10 +3411,9 @@ const Step1Personal: React.FC<
             required
             error={errors.emailId}
           >
-=======
+
 
           <Field label="Email ID" hi="ईमेल आईडी" required error={errors.emailId}>
->>>>>>> dev
             <input
               type="email"
               className={`gf-input ${errors.emailId ? "gf-error" : ""}`}
@@ -3433,7 +3422,6 @@ const Step1Personal: React.FC<
               placeholder="email@example.com"
             />
           </Field>
-<<<<<<< HEAD
         </div>
       </div>
 
@@ -3530,7 +3518,6 @@ const Step1Personal: React.FC<
               />
             </Field>
           )}
-=======
           <Field label="Mobile number" hi="मोबाइल नम्बर" required error={errors.mobileNo}>
             <input
               type="text"
@@ -3658,7 +3645,6 @@ const Step1Personal: React.FC<
               placeholder="उदाहरण: दाहिने हाथ पर निशान"
             />
           </Field>
->>>>>>> dev
         </div>
       </div>
 
@@ -6815,9 +6801,5 @@ const HeaderBar: React.FC = () => {
   );
 };
 
-<<<<<<< HEAD
 export default ApplicationFormContent;
 
-=======
-export default ApplicationFormContent;
->>>>>>> dev
