@@ -80,9 +80,9 @@ export interface EducationBlock {
 }
 
 export interface PhotoData {
-  passportPhoto?: string;
-  signatureEn?: string;
-  signatureHi?: string;
+  photograph?: string;          // Changed from passportPhoto
+  signatureEnglish?: string;    // Changed from signatureEn
+  signatureHindi?: string;      // Changed from signatureHi
 }
 
 export interface LivePhotoData {

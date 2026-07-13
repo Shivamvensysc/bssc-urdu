@@ -1,5 +1,6 @@
-// import React, { useState } from "react";
-// import { Link } from "react-router-dom";
+// import React, { useEffect, useState } from "react";
+// import { Link, useNavigate } from "react-router-dom";
+// import axios from "axios";
 // import {
 //   LogIn,
 //   Lock,
@@ -10,7 +11,9 @@
 //   EyeOff,
 //   FileText,
 //   ExternalLink,
+//   AlertCircle,
 // } from "lucide-react";
+// import { login } from "../auth/cognito";
 
 // const INK = "#12233F";
 // const INK_SOFT = "#5B6B84";
@@ -19,28 +22,180 @@
 // const LINE = "#DBDFE6";
 // const OCHRE = "#B9722E";
 // const OCHRE_DEEP = "#8F5522";
+// const DANGER = "#B3432B";
+
+// // Get base URL from environment variables
+// const BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+
+// // Types for CAPTCHA API responses
+// interface CaptchaResponse {
+//   success: boolean;
+//   message: string;
+//   captchaId: string;
+//   captchaSvg: string;
+// }
+
+// interface CaptchaValidateResponse {
+//   success: boolean;
+//   message: string;
+// }
 
 // export const BSSCLoginPortal: React.FC = () => {
+//   const navigate = useNavigate();
+
 //   const [regNo, setRegNo] = useState("");
 //   const [password, setPassword] = useState("");
 //   const [captcha, setCaptcha] = useState("");
+//   const [captchaId, setCaptchaId] = useState("");
+//   const [captchaSvg, setCaptchaSvg] = useState("");
 //   const [showPassword, setShowPassword] = useState(false);
 //   const [loading, setLoading] = useState(false);
+//   const [error, setError] = useState("");
+//   const [captchaLoading, setCaptchaLoading] = useState(false);
+//   const [isValidatingCaptcha, setIsValidatingCaptcha] = useState(false);
 
-//   const handleRefreshCaptcha = () => {
-//     console.log("Refreshing captcha...");
+//   // ── CAPTCHA helpers ───────────────────────────────────────────
+//   const fetchCaptcha = async () => {
+//     try {
+//       setCaptchaLoading(true);
+//       const response = await axios.get<CaptchaResponse>(
+//         `${BASE_URL}/auth/captcha`
+//       );
+//       const data = response.data;
+
+//       if (!response.status || !data.success) {
+//         throw new Error(data.message || "Failed to load CAPTCHA");
+//       }
+
+//       setCaptchaId(data.captchaId);
+//       setCaptchaSvg(data.captchaSvg);
+//       setCaptcha("");
+//       setError("");
+//     } catch (error: any) {
+//       console.error("CAPTCHA error:", error);
+//       setError(error?.message || "Failed to load CAPTCHA. Please refresh.");
+//     } finally {
+//       setCaptchaLoading(false);
+//     }
 //   };
 
-//   const handleLogin = (e: React.FormEvent) => {
+//   const validateCaptcha = async (): Promise<boolean> => {
+//     if (!captchaId) {
+//       setError("Please refresh CAPTCHA");
+//       return false;
+//     }
+
+//     if (!captcha.trim()) {
+//       setError("Please enter CAPTCHA");
+//       return false;
+//     }
+
+//     try {
+//       setIsValidatingCaptcha(true);
+//       const response = await axios.post<CaptchaValidateResponse>(
+//         `${BASE_URL}/auth/captcha/validate`,
+//         {
+//           captchaId: captchaId,
+//           captchaText: captcha.trim(),
+//         },
+//         {
+//           headers: { "Content-Type": "application/json" },
+//         }
+//       );
+
+//       const data = response.data;
+
+//       if (!response.status || !data.success) {
+//         setError(data.message || "Invalid CAPTCHA. Please try again.");
+//         await fetchCaptcha();
+//         return false;
+//       }
+
+//       return true;
+//     } catch (error: any) {
+//       console.error("CAPTCHA validation error:", error);
+//       setError(error?.message || "Failed to validate CAPTCHA");
+//       await fetchCaptcha();
+//       return false;
+//     } finally {
+//       setIsValidatingCaptcha(false);
+//     }
+//   };
+
+//   useEffect(() => {
+//     fetchCaptcha();
+//   }, []);
+
+//   const handleRefreshCaptcha = () => {
+//     fetchCaptcha();
+//   };
+
+//   const handleLogin = async (e: React.FormEvent) => {
 //     e.preventDefault();
+//     setError("");
+
+//     if (!regNo.trim()) {
+//       setError("Please enter your registration number.");
+//       return;
+//     }
+
+//     if (!password) {
+//       setError("Please enter your password.");
+//       return;
+//     }
+
+//     // Validate CAPTCHA with the API
+//     const isCaptchaValid = await validateCaptcha();
+//     if (!isCaptchaValid) {
+//       return;
+//     }
+
 //     setLoading(true);
-//     console.log({ regNo, password, captcha });
-//     setTimeout(() => setLoading(false), 1500);
+//     try {
+//       // NOTE: this resolves correctly only if `preferred_username` is
+//       // enabled as a Cognito sign-in alias and is set to the candidate's
+//       // registration number (see cognito.ts login() comment). Until then,
+//       // candidates need to type their email here instead.
+//       const result = await login(regNo.trim(), password);
+
+//       if (result.status === "SUCCESS") {
+//         // Store tokens for the authenticated session. Swap this for your
+//         // preferred auth-context/state-management approach if you have one.
+//         localStorage.setItem("idToken", result.idToken);
+//         localStorage.setItem("accessToken", result.accessToken);
+//         localStorage.setItem("refreshToken", result.refreshToken);
+//         navigate("/dashboard");
+//       } else if (result.status === "NEW_PASSWORD_REQUIRED") {
+//         setError(
+//           "Your account needs a password reset before you can log in. Please use 'Forgot Your Password'."
+//         );
+//       }
+//     } catch (err: any) {
+//       const code = err?.name || err?.code;
+//       if (code === "NotAuthorizedException") {
+//         setError("Incorrect registration number or password.");
+//       } else if (code === "UserNotConfirmedException") {
+//         setError(
+//           "This account's email hasn't been verified yet. Please complete registration first."
+//         );
+//       } else if (code === "UserNotFoundException") {
+//         setError("No account found with that registration number.");
+//       } else if (code === "PasswordResetRequiredException") {
+//         setError(
+//           "A password reset is required. Please use 'Forgot Your Password'."
+//         );
+//       } else {
+//         setError(err?.message || "Login failed. Please try again.");
+//       }
+//       handleRefreshCaptcha();
+//     } finally {
+//       setLoading(false);
+//     }
 //   };
 
 //   return (
 //     <div
-//       className="min-h-screen px-4 py-8 flex flex-col items-center justify-center gap-6"
+//       className="min-h-screen px-4 py-8 md:pb-32 flex flex-col items-center justify-center gap-6"
 //       style={{ background: PAPER }}
 //     >
 //       <div className="w-full max-w-[1100px] mx-auto">
@@ -118,6 +273,15 @@
 //                   Enter your credentials to access your dashboard
 //                 </p>
 //               </div>
+
+//               {error && (
+//                 <div
+//                   className="flex items-start gap-2 mb-5 text-[13px] font-bold rounded-lg px-3 py-2.5"
+//                   style={{ color: DANGER, background: "#FBEAE6" }}
+//                 >
+//                   <AlertCircle size={15} className="shrink-0 mt-0.5" /> {error}
+//                 </div>
+//               )}
 
 //               <form onSubmit={handleLogin} className="space-y-5">
 //                 {/* Registration Number */}
@@ -197,10 +361,14 @@
 //                     <button
 //                       type="button"
 //                       onClick={handleRefreshCaptcha}
-//                       className="flex items-center gap-1 text-[11px] font-bold transition-colors"
+//                       disabled={captchaLoading}
+//                       className="flex items-center gap-1 text-[11px] font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
 //                       style={{ color: OCHRE_DEEP }}
 //                     >
-//                       <RefreshCw size={12} />
+//                       <RefreshCw
+//                         size={12}
+//                         className={captchaLoading ? "animate-spin" : ""}
+//                       />
 //                       Refresh
 //                     </button>
 //                   </div>
@@ -210,12 +378,23 @@
 //                       className="w-full sm:w-[180px] min-h-[55px] border rounded-lg flex items-center justify-center px-2"
 //                       style={{ background: CARD, borderColor: LINE }}
 //                     >
-//                       <div
-//                         className="font-bold text-[22px] tracking-widest italic select-none font-mono"
-//                         style={{ color: INK }}
-//                       >
-//                         WN3E30
-//                       </div>
+//                       {captchaLoading ? (
+//                         <div className="flex items-center justify-center">
+//                           <div className="animate-spin h-6 w-6 border-2 border-[#B9722E] border-t-transparent rounded-full" />
+//                         </div>
+//                       ) : captchaSvg ? (
+//                         <div
+//                           dangerouslySetInnerHTML={{ __html: captchaSvg }}
+//                           className="w-full h-full flex items-center justify-center"
+//                         />
+//                       ) : (
+//                         <span
+//                           className="text-sm font-mono"
+//                           style={{ color: INK_SOFT }}
+//                         >
+//                           Loading...
+//                         </span>
+//                       )}
 //                     </div>
 
 //                     <div className="flex-1 relative">
@@ -226,7 +405,13 @@
 //                         placeholder="Enter CAPTCHA code"
 //                         className="w-full h-[48px] border rounded-lg px-4 text-[15px] outline-none transition-colors"
 //                         style={{ borderColor: OCHRE, color: INK }}
+//                         disabled={captchaLoading || isValidatingCaptcha}
 //                       />
+//                       {isValidatingCaptcha && (
+//                         <div className="absolute right-3 top-1/2 -translate-y-1/2">
+//                           <div className="animate-spin h-5 w-5 border-2 border-[#B9722E] border-t-transparent rounded-full" />
+//                         </div>
+//                       )}
 //                     </div>
 //                   </div>
 //                 </div>
@@ -234,14 +419,18 @@
 //                 {/* Submit Button */}
 //                 <button
 //                   type="submit"
-//                   disabled={loading}
+//                   disabled={loading || captchaLoading || isValidatingCaptcha}
 //                   className="w-full py-3 text-white text-[16px] font-semibold rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-//                   style={{ background: loading ? INK_SOFT : INK }}
+//                   style={{ background: loading || captchaLoading || isValidatingCaptcha ? INK_SOFT : INK }}
 //                 >
-//                   {loading ? (
+//                   {loading || captchaLoading || isValidatingCaptcha ? (
 //                     <>
 //                       <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-//                       Processing...
+//                       {loading
+//                         ? "Processing..."
+//                         : captchaLoading
+//                         ? "Loading CAPTCHA..."
+//                         : "Validating..."}
 //                     </>
 //                   ) : (
 //                     <>
@@ -251,7 +440,6 @@
 //                   )}
 //                 </button>
 //               </form>
-
 //             </div>
 //           </div>
 
@@ -327,7 +515,7 @@
 //             </div>
 //           </div>
 //         </div>
-//       </div> 
+//       </div>
 //     </div>
 //   );
 // };
@@ -337,6 +525,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 import {
   LogIn,
   Lock,
@@ -349,6 +538,8 @@ import {
   ExternalLink,
   AlertCircle,
 } from "lucide-react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { login } from "../auth/cognito";
 
 const INK = "#12233F";
@@ -360,14 +551,21 @@ const OCHRE = "#B9722E";
 const OCHRE_DEEP = "#8F5522";
 const DANGER = "#B3432B";
 
-/** Same captcha generator used on the registration form, kept local so this
- * file has no cross-page dependency — move to a shared util if you prefer. */
-const genCaptcha = (): string => {
-  const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-  let s = "";
-  for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
-  return s;
-};
+// Get base URL from environment variables
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+
+// Types for CAPTCHA API responses
+interface CaptchaResponse {
+  success: boolean;
+  message: string;
+  captchaId: string;
+  captchaSvg: string;
+}
+
+interface CaptchaValidateResponse {
+  success: boolean;
+  message: string;
+}
 
 export const BSSCLoginPortal: React.FC = () => {
   const navigate = useNavigate();
@@ -375,19 +573,98 @@ export const BSSCLoginPortal: React.FC = () => {
   const [regNo, setRegNo] = useState("");
   const [password, setPassword] = useState("");
   const [captcha, setCaptcha] = useState("");
-  const [captchaCode, setCaptchaCode] = useState("");
+  const [captchaId, setCaptchaId] = useState("");
+  const [captchaSvg, setCaptchaSvg] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [captchaLoading, setCaptchaLoading] = useState(false);
+  const [isValidatingCaptcha, setIsValidatingCaptcha] = useState(false);
 
-  // Generate a real captcha on mount instead of shipping a hardcoded one.
+  // ── CAPTCHA helpers ───────────────────────────────────────────
+  const fetchCaptcha = async () => {
+    try {
+      setCaptchaLoading(true);
+      const response = await axios.get<CaptchaResponse>(
+        `${BASE_URL}/auth/captcha`
+      );
+      const data = response.data;
+
+      if (!response.status || !data.success) {
+        throw new Error(data.message || "Failed to load CAPTCHA");
+      }
+
+      setCaptchaId(data.captchaId);
+      setCaptchaSvg(data.captchaSvg);
+      setCaptcha("");
+      setError("");
+    } catch (error: any) {
+      console.error("CAPTCHA error:", error);
+      const msg = error?.message || "Failed to load CAPTCHA. Please refresh.";
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setCaptchaLoading(false);
+    }
+  };
+
+  const validateCaptcha = async (): Promise<boolean> => {
+    if (!captchaId) {
+      const msg = "Please refresh CAPTCHA";
+      setError(msg);
+      toast.warn(msg);
+      return false;
+    }
+
+    if (!captcha.trim()) {
+      const msg = "Please enter CAPTCHA";
+      setError(msg);
+      toast.warn(msg);
+      return false;
+    }
+
+    try {
+      setIsValidatingCaptcha(true);
+      const response = await axios.post<CaptchaValidateResponse>(
+        `${BASE_URL}/auth/captcha/validate`,
+        {
+          captchaId: captchaId,
+          captchaText: captcha.trim(),
+        },
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      const data = response.data;
+
+      if (!response.status || !data.success) {
+        const msg = data.message || "Invalid CAPTCHA. Please try again.";
+        setError(msg);
+        toast.error(msg);
+        await fetchCaptcha();
+        return false;
+      }
+
+      return true;
+    } catch (error: any) {
+      console.error("CAPTCHA validation error:", error);
+      const msg = error?.message || "Failed to validate CAPTCHA";
+      setError(msg);
+      toast.error(msg);
+      await fetchCaptcha();
+      return false;
+    } finally {
+      setIsValidatingCaptcha(false);
+    }
+  };
+
   useEffect(() => {
-    setCaptchaCode(genCaptcha());
+    fetchCaptcha();
   }, []);
 
   const handleRefreshCaptcha = () => {
-    setCaptchaCode(genCaptcha());
-    setCaptcha("");
+    fetchCaptcha();
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -395,16 +672,22 @@ export const BSSCLoginPortal: React.FC = () => {
     setError("");
 
     if (!regNo.trim()) {
-      setError("Please enter your registration number.");
+      const msg = "Please enter your registration number.";
+      setError(msg);
+      toast.warn(msg);
       return;
     }
+
     if (!password) {
-      setError("Please enter your password.");
+      const msg = "Please enter your password.";
+      setError(msg);
+      toast.warn(msg);
       return;
     }
-    if (captcha.toUpperCase() !== captchaCode.toUpperCase()) {
-      setError("Captcha does not match. Please try again.");
-      handleRefreshCaptcha();
+
+    // Validate CAPTCHA with the API
+    const isCaptchaValid = await validateCaptcha();
+    if (!isCaptchaValid) {
       return;
     }
 
@@ -422,25 +705,32 @@ export const BSSCLoginPortal: React.FC = () => {
         localStorage.setItem("idToken", result.idToken);
         localStorage.setItem("accessToken", result.accessToken);
         localStorage.setItem("refreshToken", result.refreshToken);
+        
+        toast.success("Login successful!");
         navigate("/dashboard");
       } else if (result.status === "NEW_PASSWORD_REQUIRED") {
-        setError(
-          "Your account needs a password reset before you can log in. Please use 'Forgot Your Password'.",
-        );
+        const msg = "Your account needs a password reset before you can log in. Please use 'Forgot Your Password'.";
+        setError(msg);
+        toast.info(msg);
       }
     } catch (err: any) {
       const code = err?.name || err?.code;
+      let msg = "";
+      
       if (code === "NotAuthorizedException") {
-        setError("Incorrect registration number or password.");
+        msg = "Incorrect registration number or password.";
       } else if (code === "UserNotConfirmedException") {
-        setError("This account's email hasn't been verified yet. Please complete registration first.");
+        msg = "This account's email hasn't been verified yet. Please complete registration first.";
       } else if (code === "UserNotFoundException") {
-        setError("No account found with that registration number.");
+        msg = "No account found with that registration number.";
       } else if (code === "PasswordResetRequiredException") {
-        setError("A password reset is required. Please use 'Forgot Your Password'.");
+        msg = "A password reset is required. Please use 'Forgot Your Password'.";
       } else {
-        setError(err?.message || "Login failed. Please try again.");
+        msg = err?.message || "Login failed. Please try again.";
       }
+      
+      setError(msg);
+      toast.error(msg);
       handleRefreshCaptcha();
     } finally {
       setLoading(false);
@@ -452,8 +742,9 @@ export const BSSCLoginPortal: React.FC = () => {
       className="min-h-screen px-4 py-8 md:pb-32 flex flex-col items-center justify-center gap-6"
       style={{ background: PAPER }}
     >
-      <div className="w-full max-w-[1100px]  mx-auto">
-        <div className="grid  grid-cols-1 lg:grid-cols-12 gap-6">
+      <ToastContainer position="top-right" autoClose={4000} hideProgressBar={false} />
+      <div className="w-full max-w-[1100px] mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* LEFT BAR: External Links Menu */}
           <div className="lg:col-span-3">
             <div
@@ -615,10 +906,14 @@ export const BSSCLoginPortal: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleRefreshCaptcha}
-                      className="flex items-center gap-1 text-[11px] font-bold transition-colors"
+                      disabled={captchaLoading}
+                      className="flex items-center gap-1 text-[11px] font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       style={{ color: OCHRE_DEEP }}
                     >
-                      <RefreshCw size={12} />
+                      <RefreshCw
+                        size={12}
+                        className={captchaLoading ? "animate-spin" : ""}
+                      />
                       Refresh
                     </button>
                   </div>
@@ -628,12 +923,23 @@ export const BSSCLoginPortal: React.FC = () => {
                       className="w-full sm:w-[180px] min-h-[55px] border rounded-lg flex items-center justify-center px-2"
                       style={{ background: CARD, borderColor: LINE }}
                     >
-                      <div
-                        className="font-bold text-[22px] tracking-widest italic select-none font-mono"
-                        style={{ color: INK }}
-                      >
-                        {captchaCode}
-                      </div>
+                      {captchaLoading ? (
+                        <div className="flex items-center justify-center">
+                          <div className="animate-spin h-6 w-6 border-2 border-[#B9722E] border-t-transparent rounded-full" />
+                        </div>
+                      ) : captchaSvg ? (
+                        <div
+                          dangerouslySetInnerHTML={{ __html: captchaSvg }}
+                          className="w-full h-full flex items-center justify-center"
+                        />
+                      ) : (
+                        <span
+                          className="text-sm font-mono"
+                          style={{ color: INK_SOFT }}
+                        >
+                          Loading...
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex-1 relative">
@@ -644,7 +950,13 @@ export const BSSCLoginPortal: React.FC = () => {
                         placeholder="Enter CAPTCHA code"
                         className="w-full h-[48px] border rounded-lg px-4 text-[15px] outline-none transition-colors"
                         style={{ borderColor: OCHRE, color: INK }}
+                        disabled={captchaLoading || isValidatingCaptcha}
                       />
+                      {isValidatingCaptcha && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <div className="animate-spin h-5 w-5 border-2 border-[#B9722E] border-t-transparent rounded-full" />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -652,14 +964,18 @@ export const BSSCLoginPortal: React.FC = () => {
                 {/* Submit Button */}
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || captchaLoading || isValidatingCaptcha}
                   className="w-full py-3 text-white text-[16px] font-semibold rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ background: loading ? INK_SOFT : INK }}
+                  style={{ background: loading || captchaLoading || isValidatingCaptcha ? INK_SOFT : INK }}
                 >
-                  {loading ? (
+                  {loading || captchaLoading || isValidatingCaptcha ? (
                     <>
                       <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-                      Processing...
+                      {loading
+                        ? "Processing..."
+                        : captchaLoading
+                        ? "Loading CAPTCHA..."
+                        : "Validating..."}
                     </>
                   ) : (
                     <>
@@ -669,7 +985,6 @@ export const BSSCLoginPortal: React.FC = () => {
                   )}
                 </button>
               </form>
-
             </div>
           </div>
 
@@ -745,7 +1060,7 @@ export const BSSCLoginPortal: React.FC = () => {
             </div>
           </div>
         </div>
-      </div> 
+      </div>
     </div>
   );
 };

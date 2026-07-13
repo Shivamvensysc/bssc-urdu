@@ -15,12 +15,18 @@
     "@types/react-datepicker": "^6.2.0",
     "amazon-cognito-identity-js": "^6.3.20",
     "aws-amplify": "^6.18.0",
+    "axios": "^1.18.1",
+    "jspdf": "^4.2.1",
     "lucide-react": "^1.23.0",
     "react": "^19.2.7",
     "react-datepicker": "^9.1.0",
     "react-dom": "^19.2.7",
     "react-hook-form": "^7.81.0",
     "react-router-dom": "^7.18.1",
+<<<<<<< HEAD
+=======
+    "react-toastify": "^11.1.0",
+>>>>>>> dev
     "react-webcam": "^7.2.0",
     "zod": "^4.4.3"
   },
