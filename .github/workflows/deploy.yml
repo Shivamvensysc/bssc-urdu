@@ -1,9 +1,10 @@
-name: Deploy Frontend to AWS
+name: Deploy Frontend to AWS (Multi-Environment)
 
 on:
   push:
     branches:
       - main
+      - dev
 
 jobs:
   deploy:
@@ -31,8 +32,20 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-2
 
-    - name: Deploy compiled files to S3
-      run: aws s3 sync ./dist s3://shivam-bssc --delete
+    # --- DEV DEPLOYMENT ---
+    - name: Deploy to Dev S3
+      if: github.ref == 'refs/heads/dev'
+      run: aws s3 sync ./dist s3://${{ vars.DEV_S3_BUCKET }} --delete
 
-    - name: Invalidate CloudFront Cache
-      run: aws cloudfront create-invalidation --distribution-id E246PHKJVRRWUI --paths "/*"
+    - name: Invalidate Dev CloudFront Cache
+      if: github.ref == 'refs/heads/dev'
+      run: aws cloudfront create-invalidation --distribution-id ${{ vars.DEV_CLOUDFRONT_ID }} --paths "/*"
+
+    # --- PRODUCTION DEPLOYMENT ---
+    - name: Deploy to Production S3
+      if: github.ref == 'refs/heads/main'
+      run: aws s3 sync ./dist s3://${{ vars.PROD_S3_BUCKET }} --delete
+
+    - name: Invalidate Production CloudFront Cache
+      if: github.ref == 'refs/heads/main'
+      run: aws cloudfront create-invalidation --distribution-id ${{ vars.PROD_CLOUDFRONT_ID }} --paths "/*"
