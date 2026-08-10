@@ -146,7 +146,7 @@ export const mapStep0ToStep1 = (
   // ---- Ex-serviceman / NCC ----
   const exServiceman = boolToYesNo(step0.isExServiceman);
   if (exServiceman) out.exServiceman = exServiceman;
-  if (step0.nccCadet) out.nccCadet = step0.nccCadet;
+
 
   // ---- Employment status ----
   if (step0.biharGovtEmp) out.biharGovtEmployee = step0.biharGovtEmp;

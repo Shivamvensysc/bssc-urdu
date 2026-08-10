@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom";
 interface GovPortalHeaderProps {
   showCandidateName: string;
   showRegistrationNo: string;
-  email?: string; // Added optional email prop
+  email?: string; // Captures dynamic email from parent state
   notificationCount?: number;
   onMenuClick?: () => void;
   isSidebarCollapsed?: boolean;
@@ -23,7 +23,7 @@ interface GovPortalHeaderProps {
 export default function Header({
   showCandidateName,
   showRegistrationNo,
-  email = "candidate@example.com", // Default fallback if not passed
+  email = "candidate@example.com", // Fallback default value
   onMenuClick,
   isSidebarCollapsed = false,
   onToggleCollapse,

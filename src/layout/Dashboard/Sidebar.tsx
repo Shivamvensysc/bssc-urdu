@@ -36,6 +36,7 @@ interface SidebarProps {
   candidateName: string;
   registrationNo: string;
   completionPercent: number;
+  isSubmitted: boolean | null; // Passed down from parent layout state
 }
 
 function NavRow({
@@ -43,34 +44,48 @@ function NavRow({
   isActive,
   isCollapsed,
   onClose,
+  isSubmitted,
 }: {
   item: NavItem;
   isActive: boolean;
   isCollapsed: boolean;
   onClose: () => void;
+  isSubmitted: boolean | null;
 }) {
   const Icon = item.icon;
+  const isDashboardDisabled = item.href === "/dashboard" && isSubmitted === false;
+
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (isDashboardDisabled) {
+      e.preventDefault(); // Stop navigation if not submitted
+      return;
+    }
+    onClose();
+  };
+
   return (
     <Link
-      to={item.href}
-      onClick={onClose}
+      to={isDashboardDisabled ? "#" : item.href}
+      onClick={handleClick}
       title={isCollapsed ? item.label : undefined}
       className={`group relative flex items-center rounded-lg text-sm font-medium transition-colors ${
         isCollapsed ? "justify-center px-0 py-2.5" : "gap-3 px-3 py-2.5"
       } ${
-        isActive
+        isDashboardDisabled
+          ? "opacity-50 cursor-not-allowed text-[var(--ink-soft)]"
+          : isActive
           ? "text-[var(--ink)] bg-[var(--ochre)]/10"
           : "text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--paper)]"
       }`}
     >
-      {isActive && (
+      {isActive && !isDashboardDisabled && (
         <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-[var(--ochre)]" />
       )}
       <span className="relative flex-shrink-0">
         <Icon
           size={17}
           className={
-            isActive
+            isActive && !isDashboardDisabled
               ? "text-[var(--ochre-deep)]"
               : "text-[var(--ink-soft)] group-hover:text-[var(--ink)]"
           }
@@ -111,12 +126,22 @@ export default function Sidebar({
   onClose,
   isCollapsed,
   activePath = "/dashboard",
+  isSubmitted,
 }: SidebarProps) {
   const navigate = useNavigate();
 
   const handleLogout = () => {
     navigate("/");
   };
+
+  // Filter main nav dynamically based on isSubmitted status
+  const visibleNavItems = MAIN_NAV.filter((item) => {
+    // If the form has been submitted, hide the application form tab
+    if (item.href === "/application" && isSubmitted === true) {
+      return false;
+    }
+    return true;
+  });
 
   const renderContent = (collapsed: boolean) => (
     <div className="flex flex-col h-full">
@@ -137,13 +162,14 @@ export default function Sidebar({
       >
         <div>
           <div className="space-y-1">
-            {MAIN_NAV.map((item) => (
+            {visibleNavItems.map((item) => (
               <NavRow
                 key={item.id}
                 item={item}
                 isActive={activePath === item.href}
                 isCollapsed={collapsed}
                 onClose={onClose}
+                isSubmitted={isSubmitted}
               />
             ))}
           </div>

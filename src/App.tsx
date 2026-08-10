@@ -15,14 +15,14 @@ import BSSCForgotRegistration from "./pages/BSSCForgotRegistration";
 import DashboardLayout from "./layout/Dashboard/DashboardLayout";
 import DashboardContent from "./pages/Dashboardcontent";
 import ApplicationFormContent from "./pages/Application";
+import FormInstructions from "./pages/FormInstructions";
+import LivePhotoInstructions from "./pages/LivePhotoInstructions";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Home page without layout */}
-        {/* <Route path="/" element={<HomePage />} /> */}
-
+    
         {/* All routes below will use Layout */}
         <Route element={<Layout />}>
         <Route path="/" element={<HomePage />} />
@@ -32,6 +32,8 @@ export default function App() {
           <Route path="/upload" element={<UploadForm />} />
           <Route path="/education" element={<Qualification />} />
           <Route path="/liveupload" element={<LivePhotoUpload />} />
+          <Route path="/instructions" element={<LivePhotoInstructions/>} />
+          <Route path="/how-to-apply" element={<FormInstructions/>} />
           <Route path="/login" element={<BSSCLoginPortal />} />
           <Route path="/forgot-password" element={<BSSCForgotPassword />} />
           <Route

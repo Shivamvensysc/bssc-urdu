@@ -1,5 +1,4 @@
-import axios from "axios";
-
+import api from "./interceptor";
 /* =================================================================
    SINGLE SOURCE OF TRUTH FOR ALL "APPLICATION FORM" RELATED APIs
    - Countries / States / Districts (location lookups)
@@ -89,7 +88,6 @@ export interface Step0Data {
   emailId: string | null;
   pwdType: string | null;
   fullName: string | null;
-  nccCadet: string | null;
   postName: string | null;
   fatherName: string | null;
   motherName: string | null;
@@ -97,7 +95,6 @@ export interface Step0Data {
   dateOfBirth: string | null; // "DD-MM-YYYY"
   declaration: boolean | null;
   nationality: string | null;
-  sportsLevel: string | null;
   subCategory: number | string | null;
   biharGovtEmp: string | null;
   bsscAttempts: string | null;
@@ -106,7 +103,6 @@ export interface Step0Data {
   mainCategory: number | string | null;
   mobileNumber: string | null;
   pwd40Percent: string | null;
-  isSportsQuota: boolean | null;
   maritalStatus: string | null;
   pwdPercentage: string | number | null;
   contractualEmp: string | null;
@@ -126,11 +122,8 @@ export interface Step0Data {
   pwdCertificateNumber: string | null;
   pwdCertificateAuthority: string | null;
   pwdCertificateIssueDate: string | null;
-  sportsCertificateNumber: string | null;
   categoryCertificateNumber: string | null;
   domicileCertificateNumber: string | null;
-  sportsCertificateAuthority: string | null;
-  sportsCertificateIssueDate: string | null;
   categoryCertificateAuthority: string | null;
   categoryCertificateIssueDate: string | null;
   domicileCertificateAuthority: string | null;
@@ -185,17 +178,17 @@ export interface ApplicationStepsResponse {
 ----------------------------------------------------------------- */
 export const locationApi = {
   getCountries: () =>
-    axios.get<{ success: boolean; message: string; data: Country[] }>(
+    api.get<{ success: boolean; message: string; data: Country[] }>(
       `${API_BASE_URL}/countries`,
     ),
 
   getStatesByCountry: (countryId: number) =>
-    axios.get<{ success: boolean; message: string; data: StateItem[] }>(
+    api.get<{ success: boolean; message: string; data: StateItem[] }>(
       `${API_BASE_URL}/countries/${countryId}/states`,
     ),
 
   getDistrictsByState: (stateId: number) =>
-    axios.get<{ success: boolean; message: string; data: DistrictItem[] }>(
+    api.get<{ success: boolean; message: string; data: DistrictItem[] }>(
       `${API_BASE_URL}/states/${stateId}/districts`,
     ),
 };
@@ -208,31 +201,31 @@ export const applicationApi = {
    *  currentStep, completedSteps, and every previously-saved step
    *  (including the step0 registration snapshot used for auto-fill). */
   getApplicationSteps: () =>
-    axios.get<{ success: boolean; data: ApplicationStepsResponse }>(
+    api.get<{ success: boolean; data: ApplicationStepsResponse }>(
       `${API_BASE_URL}/application/steps/all`,
       getAuthHeaders(),
     ),
 
   saveStep1: (data: any) =>
-    axios.patch(`${API_BASE_URL}/auth/candidate/step-1`, data, getAuthHeaders()),
+    api.patch(`${API_BASE_URL}/auth/candidate/step-1`, data, getAuthHeaders()),
 
   saveStep2: (data: any) =>
-    axios.patch(`${API_BASE_URL}/auth/candidate/step-2`, data, getAuthHeaders()),
+    api.patch(`${API_BASE_URL}/auth/candidate/step-2`, data, getAuthHeaders()),
 
   saveStep3: (data: any) =>
-    axios.patch(`${API_BASE_URL}/auth/candidate/step-3`, data, getAuthHeaders()),
+    api.patch(`${API_BASE_URL}/auth/candidate/step-3`, data, getAuthHeaders()),
 
   saveStep4: (data: any) =>
-    axios.patch(`${API_BASE_URL}/auth/candidate/step-4`, data, getMultipartHeaders()),
+    api.patch(`${API_BASE_URL}/auth/candidate/step-4`, data, getMultipartHeaders()),
 
   /** payload should include the live-photo upload link (data URL / file URL). */
   saveStep5: (data: any) =>
-    axios.post(`${API_BASE_URL}/auth/candidate/step-5`, data, getMultipartHeaders()),
+    api.post(`${API_BASE_URL}/auth/candidate/step-5`, data, getMultipartHeaders()),
 
   submitApplicationFinal: (applicationId: string) =>
-    axios.post(
+    api.post(
       `${API_BASE_URL}/application/${applicationId}/submit-final`,
-      {},
+      {applicationId},
       getAuthHeaders(),
     ),
 };
@@ -240,13 +233,24 @@ export const applicationApi = {
 /* -----------------------------------------------------------------
    PAYMENT API
 ----------------------------------------------------------------- */
+// export const paymentApi = {
+//   /** POST /payment/initiate — used both as a fee probe on Step 2 mount
+//    *  and (with the same call) to actually kick off the gateway order. */
+//   initiate: (applicationId: string, paymentMode: string = "online") =>
+//     api.post(
+//       `${API_BASE_URL}/payment/initiate`,
+//       { applicationId, paymentMode },
+//       getAuthHeaders(),
+//     ),
+// };
+
 export const paymentApi = {
   /** POST /payment/initiate — used both as a fee probe on Step 2 mount
    *  and (with the same call) to actually kick off the gateway order. */
-  initiate: (applicationId: string, paymentMode: string = "online") =>
-    axios.post(
+  initiate: (payload: { applicationId: string; paymentMode: string; gatewayChoice: string }) =>
+    api.post(
       `${API_BASE_URL}/payment/initiate`,
-      { applicationId, paymentMode },
+      payload,
       getAuthHeaders(),
     ),
 };

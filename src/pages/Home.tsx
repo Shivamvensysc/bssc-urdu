@@ -8,8 +8,8 @@ import {
   ArrowRight,
   FileText,
   BookOpen,
-  Calendar,
   HelpCircle,
+  ChevronDown,
 } from 'lucide-react';
 
 // --- Types & Interfaces ---
@@ -30,180 +30,225 @@ interface RecentNotice {
   type: 'pdf' | 'portal';
 }
 
+interface FaqItem {
+  q: string;
+  a: string;
+}
+
+interface FaqCategory {
+  name: string;
+  faqs: FaqItem[];
+}
+
 export default function Home() {
   // --- States ---
   const [searchKeyword, setSearchKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Status');
   const [sortBy, setSortBy] = useState('Latest Published');
+  
+  // FAQ States
+  const [activeFaqCategory, setActiveFaqCategory] = useState<string>('Registration & Eligibility');
+  const [expandedFaqIndex, setExpandedFaqIndex] = useState<number | null>(0);
 
   // --- Mock Data ---
   const notifications: NotificationItem[] = [
     {
       id: '1',
-      title: 'ADV NO. 08/25, POST- SPORTS TRAINER',
-      dept: '',
-      advtNo: 'ADV NO. 08/25',
-      publishedDate: '09-10-2025',
-      closingDate: '09-11-2025 (11:59 PM)',
+      title: 'ADV NO. 01/2026, 4th GRADUATE LEVEL COMBINED COMPETITIVE EXAM (CGL-4)',
+      dept: 'Various Departments',
+      advtNo: 'ADV NO. 01/2026',
+      publishedDate: 'Announced',
+      closingDate: 'To Be Announced',
       status: 'Open',
       isNew: true,
-    },
-    {
-      id: '2',
-      title: 'ADV NO. 07/25, POST- STENOGRAPHER/STENO TYPIST GRADE-III',
-      dept: '',
-      advtNo: 'ADV NO. 07/25',
-      publishedDate: '25-09-2025',
-      closingDate: '03-11-2025 (11:59 PM)',
-      status: 'Open',
-      isNew: true,
-    },
-    {
-      id: '3',
-      title:
-        'ADV NO. 06/25, POST- OFFICE ATTENDANT/ATTENDANT(SPECIAL) COMBINED COMPETITIVE EXAM',
-      dept: '',
-      advtNo: 'ADV NO. 06/25',
-      publishedDate: '25-08-2025',
-      closingDate: '21-11-2025 (11:59 PM)',
-      status: 'Open',
-      isNew: true,
-    },
-    {
-      id: '4',
-      title: 'ADV NO. 05/25, POST- 4TH GRADUATE LEVEL COMBINED COMPETITIVE EXAM',
-      dept: '',
-      advtNo: 'ADV NO. 05/25',
-      publishedDate: '25-08-2025',
-      closingDate: '21-11-2025 (11:59 PM)',
-      status: 'Open',
-      isNew: true,
-    },
-    {
-      id: '5',
-      title:
-        'DOWNLOAD ADMIT CARD FOR ADV NO. 03/25, POST- FIELD ASSISTANT (AGRICULTURE DEPARTMENT)',
-      dept: '',
-      advtNo: 'ADVT. NO.-03/25',
-      publishedDate: '30-07-2025',
-      closingDate: '10-08-2025 (01:00 PM)',
-      status: 'Closed',
-      isNew: false,
-    },
-    {
-      id: '6',
-      title:
-        'DOWNLOAD ADMIT CARD FOR ADV NO. 02/25, POST- WELFARE ORGANISER AND LOWER DIVISION CLERK (SAINIK KALYAN NIDESHALAYA)',
-      dept: '',
-      advtNo: 'ADVT. NO.-02/25',
-      publishedDate: '18-06-2025',
-      closingDate: '29-06-2025 (02:00 PM)',
-      status: 'Closed',
-      isNew: false,
-    },
-    {
-      id: '7',
-      title: 'CLICK HERE TO APPLY FOR ADV NO. 04/25, POST- LABORATORY ASSISTANT',
-      dept: '',
-      advtNo: 'ADVT. NO.-04/25',
-      publishedDate: '15-05-2025',
-      closingDate: '16-06-2025 (11:59 PM)',
-      status: 'Closed',
-      isNew: false,
-    },
-    {
-      id: '8',
-      title:
-        'CLICK HERE TO APPLY FOR ADV NO. 03/25, POST- FIELD ASSISTANT (AGRICULTURE DEPARTMENT)',
-      dept: '',
-      advtNo: 'ADVT. NO.-03/25',
-      publishedDate: '25-04-2025',
-      closingDate: '21-05-2025 (11:59 PM)',
-      status: 'Closed',
-      isNew: false,
-    },
-    {
-      id: '9',
-      title:
-        'CLICK HERE TO APPLY FOR ADV NO. 02/25, POST- WELFARE ORGANISER AND LOWER DIVISION CLERK (SAINIK KALYAN NIDESHALAYA)',
-      dept: '',
-      advtNo: 'ADVT. NO.-02/25',
-      publishedDate: '25-04-2025',
-      closingDate: '21-05-2025 (11:59 PM)',
-      status: 'Closed',
-      isNew: false,
     },
   ];
 
   const recentNotices: RecentNotice[] = [
     {
-      date: '09-10-2025',
-      title: 'ADV NO. 08/25, POST- SPORTS TRAINER',
+      date: 'Announced',
+      title: 'ADV NO. 01/2026, 4th GRADUATE LEVEL COMBINED COMPETITIVE EXAM (CGL-4)',
       type: 'portal',
-    },
-    {
-      date: '25-09-2025',
-      title: 'ADV NO. 07/25, POST- STENOGRAPHER/STENO TYPIST GRADE-III',
-      type: 'portal',
-    },
-    {
-      date: '25-08-2025',
-      title:
-        'ADV NO. 06/25, POST- OFFICE ATTENDANT/ATTENDANT(SPECIAL) COMBINED COMPETITIVE EXAM',
-      type: 'pdf',
-    },
-    {
-      date: '25-08-2025',
-      title: 'ADV NO. 05/25, POST- 4TH GRADUATE LEVEL COMBINED COMPETITIVE EXAM',
-      type: 'pdf',
     },
   ];
 
+  // --- FAQ Data ---
+  const faqCategories: FaqCategory[] = [
+    {
+      name: "Registration & Eligibility",
+      faqs: [
+        {
+          q: "I am unable to start a new registration — the 'Apply' button is not working. What should I do?",
+          a: "Clear your browser cache and cookies, or try a different browser (Chrome or Firefox, latest version)[cite: 1]. Ensure pop-up blockers are disabled for the portal[cite: 1]. If the issue persists, it is usually a server-load issue during peak hours — try again during off-peak times (early morning or late evening)[cite: 1]."
+        },
+        {
+          q: "Can I edit my personal details (name, date of birth, category) after final submission?",
+          a: "No[cite: 1]. Core details such as name, DOB, and category cannot be changed after final submission, as they are matched against your supporting certificates[cite: 1]. Only the designated \"Correction Window\" (announced separately) allows limited edits[cite: 1]."
+        },
+        {
+          q: "I am not sure which post/category I am eligible for. Where can I check?",
+          a: "Refer to the detailed eligibility criteria in the official notification (age limit, educational qualification, physical standards where applicable)[cite: 1]. The helpdesk cannot certify eligibility — this is determined by the Commission at the scrutiny stage[cite: 1]."
+        },
+        {
+          q: "Can I submit more than one application for the same post?",
+          a: "Only one application per candidate per post is permitted[cite: 1]. Multiple submissions may lead to rejection of all your applications[cite: 1]. If you registered by mistake, do not create a second profile — contact the helpdesk with your Registration ID to resolve it[cite: 1]."
+        }
+      ]
+    },
+    {
+      name: "Login, OTP & Password",
+      faqs: [
+        {
+          q: "I am not receiving the OTP on my registered mobile number/email.",
+          a: "Wait at least 2–3 minutes before requesting a resend (frequent requests may trigger a temporary block)[cite: 1]. Check that your mobile has network signal and check the spam/junk folder for email OTPs[cite: 1]. If it still fails after 3 attempts, share your Registration ID/mobile number with the helpdesk for manual verification[cite: 1]."
+        },
+        {
+          q: "I forgot my registration password. How do I reset it?",
+          a: "Use the \"Forgot Password\" link on the login page[cite: 1]. You'll need your registered mobile number or email and Registration ID[cite: 1]. A reset link/OTP will be sent to your registered contact details — this cannot be changed without identity proof[cite: 1]."
+        },
+        {
+          q: "My account shows 'locked' after multiple failed login attempts. What now?",
+          a: "Accounts are typically auto-unlocked after 30 minutes[cite: 1]. If it remains locked beyond that, the helpdesk can manually unlock it — please provide your Registration ID and a copy of a valid ID proof[cite: 1]."
+        }
+      ]
+    },
+    {
+      name: "Photo & Signature Upload",
+      faqs: [
+        {
+          q: "My photo/signature upload keeps failing.",
+          a: "Check the file format (usually JPEG/JPG only) and size limit (commonly 20–50 KB for photo, 10–20 KB for signature — confirm exact limits in the notification)[cite: 1]. Use an online image compressor if the file exceeds the limit[cite: 1]. Ensure the photo is a recent passport-size photograph with a plain background, and the signature is in black/blue ink on white paper[cite: 1]."
+        },
+        {
+          q: "Can I re-upload my photo after submission if it looks unclear?",
+          a: "Only during the correction window, if one is announced[cite: 1]. Otherwise, a blurred or non-compliant photo may be flagged during document verification, so it's best to get it right before final submission[cite: 1]."
+        }
+      ]
+    },
+    {
+      name: "Document Upload",
+      faqs: [
+        {
+          q: "Which documents are mandatory to upload during registration?",
+          a: "Typically: educational certificates/mark sheets, category certificate (if applicable), age proof, domicile/residence certificate, and photo/signature[cite: 1]. The exact list is in the notification's \"Documents Required\" section — this can vary by post[cite: 1]."
+        },
+        {
+          q: "My certificate is in a language other than English — is that acceptable?",
+          a: "Most Commissions require an English or Hindi language certificate, or a certified translation[cite: 1]. If unsure, upload the original along with a translated/attested copy and flag it to the helpdesk for confirmation before final submission[cite: 1]."
+        },
+        {
+          q: "The portal is rejecting my document upload with a file size/format error.",
+          a: "Convert the file to PDF (or the specified format) and compress it below the stated limit (commonly 100–200 KB per document)[cite: 1]. Free tools like SmallPDF or ILovePDF can help[cite: 1]. Avoid scanning at very high DPI, which inflates file size unnecessarily[cite: 1]."
+        }
+      ]
+    },
+    {
+      name: "Application Fee & Payment",
+      faqs: [
+        {
+          q: "I paid the application fee, but the status still shows 'Payment Pending.'",
+          a: "This usually resolves within 24–48 hours as banks confirm the transaction[cite: 1]. Do not make a second payment[cite: 1]. If the status doesn't update after 48 hours, share your transaction ID/UTR number and payment date with the helpdesk[cite: 1]."
+        },
+        {
+          q: "I was charged twice for the same application. How do I get a refund?",
+          a: "Duplicate/failed transactions where money was debited but the application wasn't confirmed are typically auto-refunded within 5–7 working days by the bank/payment gateway[cite: 1]. If not received, raise a ticket with both transaction reference numbers[cite: 1]."
+        },
+        {
+          q: "Are there fee concessions for SC/ST/PwD/Ex-Servicemen candidates?",
+          a: "No[cite: 1]."
+        },
+        {
+          q: "What payment modes are accepted?",
+          a: "Typically net banking, debit/credit card, and UPI[cite: 1]. If a particular mode fails repeatedly, try an alternate mode rather than retrying the same one multiple times[cite: 1]."
+        }
+      ]
+    },
+    {
+      name: "Form Correction",
+      faqs: [
+        {
+          q: "I made a mistake in my application. Can I correct it now?",
+          a: "Corrections are only allowed during the officially announced Correction Window, usually opened for a few days after the registration deadline[cite: 1]. Outside this window, no changes can be made — watch for the official announcement[cite: 1]."
+        },
+        {
+          q: "What details typically CANNOT be corrected even during the correction window?",
+          a: "Usually: category (once claimed with certificate), post applied for (in some cases), and the mobile number/email used for OTP verification[cite: 1]. Always check the specific correction-window notice, as rules vary by exam cycle[cite: 1]."
+        }
+      ]
+    },
+    {
+      name: "Admit Card & Exam Centre",
+      faqs: [
+        {
+          q: "When and where will the admit card be released?",
+          a: "Admit cards are usually released 7–10 days before the exam date on the official portal, downloadable using your Registration ID and DOB/password[cite: 1]. An SMS/email alert is usually sent, but candidates should proactively check the portal rather than rely solely on notifications[cite: 1]."
+        },
+        {
+          q: "Can I choose or change my exam centre?",
+          a: "No[cite: 1]."
+        }
+      ]
+    },
+    {
+      name: "Technical & General",
+      faqs: [
+        {
+          q: "The portal is very slow or not loading, especially close to the deadline.",
+          a: "This is common due to heavy traffic near the last date[cite: 1]. Avoid last-day submission; if you must, try during non-peak hours (late night/early morning) and avoid refreshing repeatedly, which can worsen server load[cite: 1]."
+        },
+        {
+          q: "I completed the form but didn't get a confirmation/printout. Is my application submitted?",
+          a: "Log in and check your Application Status/Dashboard — if it shows \"Submitted\" or provides a downloadable acknowledgment, your application is registered[cite: 1]. Always download and save the confirmation PDF immediately after submission; do not rely on email confirmation alone[cite: 1]."
+        },
+        {
+          q: "Do I need to send a hard copy of the application/documents by post?",
+          a: "Generally no — most recruitment processes are now fully online, and physical documents are verified later at the interview/document-verification stage[cite: 1]. Confirm this specifically in the notification, as it varies[cite: 1]."
+        }
+      ]
+    }
+  ];
+
+  const currentCategoryFaqs = faqCategories.find(c => c.name === activeFaqCategory)?.faqs || [];
+
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-800 font-sans antialiased flex flex-col justify-between">
-    
-
-      {/* SECTION 2: Hero Banner */}
+      
+      {/* SECTION 1: Hero Banner */}
       <section
-        className="w-full relative overflow-hidden bg-cover bg-center bg-no-repeat pt-16 pb-24 md:pt-24 md:pb-36 px-6"
+        className="w-full relative overflow-hidden bg-cover bg-center bg-no-repeat pt-26 pb-24 px-6"
         style={{
           backgroundImage: `
             linear-gradient(
               to right,
-              rgba(255,255,255,1) 0%,
-              rgba(255,255,255,0.98) 35%,
-              rgba(255,255,255,0.85) 50%,
-              rgba(255,255,255,0.30) 75%,
-              rgba(255,255,255,0.0) 100%
+              rgba(255,255,255,0.96) 0%,
+              rgba(255,255,255,0.90) 25%,
+              rgba(255,255,255,0.50) 35%,
+              rgba(255,255,255,0) 100%
             ),
-            url('/bssc.png')
+            url('/back.png')
           `,
         }}
       >
         <div className="max-w-7xl mx-auto w-full z-10 relative">
-          <div className="max-w-2xl space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 text-xs font-semibold text-[#0B469B] border border-blue-100">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#0B469B] animate-pulse"></span>
-              Official Recruitment Portal
-            </div>
-
-            <h1 className="text-4xl sm:text-5xl font-bold text-[#0B469B] leading-[1.15] tracking-tight">
+          <div className="max-w-2xl space-y-6 mt-16">
+            <h1 className="text-4xl sm:text-5xl font-bold text-[#0B469B] leading-[1.15] tracking-tight drop-shadow-sm">
               Bihar Staff Selection Commission Recruitment Portal
             </h1>
 
-            <p className="text-slate-600 leading-relaxed text-base md:text-lg">
-              The centralized gateway for government job aspirants in Bihar. Access
-              the latest advertisements, download admit cards, and check official
-              results with complete transparency.
+            <p className="max-w-xl text-[17px] md:text-[18px] leading-8 font-semibold text-slate-800 tracking-[0.01em]">
+              The Bihar Staff Selection Commission (BSSC), located at Veterinary College,
+              Patna, was established under Bihar State Act No. 7 of 2002 to conduct
+              recruitment for various Government of Bihar posts up to Pay Level-7 in a
+              transparent and merit-based manner.
             </p>
 
             <div className="flex flex-wrap gap-4 pt-2">
-              <button className="bg-[#0B469B] hover:bg-[#093a82] text-white px-6 py-3.5 rounded-xl font-semibold text-[15px] shadow-md flex items-center gap-2 transition-all group">
+              <button className="bg-[#0B469B] hover:bg-[#093a82] text-white px-6 py-3.5 rounded-xl font-semibold text-[15px] shadow-md flex items-center gap-2 transition-all group cursor-pointer">
                 View Recruitment
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </button>
 
-              <button className="bg-white hover:bg-slate-50 text-[#0B469B] border-2 border-blue-100 px-6 py-3.5 rounded-xl font-semibold text-[15px] shadow-sm transition-all">
+              <button className="bg-white hover:bg-slate-50 text-[#0B469B] border-2 border-blue-100 px-6 py-3.5 rounded-xl font-semibold text-[15px] shadow-sm transition-all cursor-pointer">
                 Download Notifications
               </button>
             </div>
@@ -212,11 +257,12 @@ export default function Home() {
       </section>
 
       {/* Main Container Core Layout Layer */}
-      <main className="max-w-7xl mx-auto w-full px-6 pb-12 space-y-12 relative z-20">
+      <main className="max-w-7xl mx-auto w-full px-6 pb-20 space-y-12 relative z-20">
+        
         {/* OVERLAPPING STATS CARD COMPONENT */}
         <section className="-mt-16 md:-mt-20 lg:-mt-20 mb-6 bg-white border border-slate-100 rounded-2xl md:rounded-3xl shadow-xl shadow-slate-200/60 p-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 divide-y md:divide-y-0 md:gap-4 lg:gap-0 lg:divide-x divide-slate-100 w-full">
           {[
-            { label: 'Latest Advertisements', val: '18 Open', icon: Megaphone, desc: 'Active windows' },
+            { label: 'Latest Advertisements', val: '1 Open', icon: Megaphone, desc: 'Active windows' },
             { label: 'Apply Online', val: '24x7', icon: BookOpen, desc: 'Digital application' },
             { label: 'Admit Cards', val: 'Download', icon: IdCard, desc: 'Hall tickets open' },
             { label: 'Notices', val: 'Updated Daily', icon: Bell, desc: 'Latest circulars' },
@@ -249,7 +295,7 @@ export default function Home() {
           <div className="lg:col-span-2 space-y-6">
             {/* Filter Dashboard Header */}
             <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-              {/* Search keywords - Spans 4 out of 12 columns */}
+              {/* Search keywords */}
               <div className="space-y-1.5 md:col-span-4">
                 <label className="text-xs font-semibold text-slate-500 tracking-wider uppercase">
                   Search Keywords
@@ -266,7 +312,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Status - Spans 2 out of 12 columns */}
+              {/* Status */}
               <div className="space-y-1.5 md:col-span-2">
                 <label className="text-xs font-semibold text-slate-500 tracking-wider uppercase">
                   Status
@@ -282,7 +328,7 @@ export default function Home() {
                 </select>
               </div>
 
-              {/* Sort By - Spans 3 out of 12 columns */}
+              {/* Sort By */}
               <div className="space-y-1.5 md:col-span-3">
                 <label className="text-xs font-semibold text-slate-500 tracking-wider uppercase">
                   Sort By
@@ -297,7 +343,7 @@ export default function Home() {
                 </select>
               </div>
 
-              {/* Filter Button - Spans remaining 3 out of 12 columns */}
+              {/* Filter Button */}
               <div className="md:col-span-3">
                 <button className="bg-[#0B469B] hover:bg-[#093a82] text-white font-semibold text-sm h-[42px] rounded-xl transition-all shadow-sm w-full">
                   Apply Filter
@@ -310,7 +356,7 @@ export default function Home() {
                 Latest Recruitment Notifications
               </h2>
               <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md self-start sm:self-auto">
-                Showing {notifications.length} of 24 active posts
+                Showing {notifications.length} of 1 active posts
               </span>
             </div>
 
@@ -410,30 +456,6 @@ export default function Home() {
                 ))}
               </div>
             </div>
-
-            <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-2">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-3">
-                Quick Resources
-              </span>
-              {[
-                { label: 'Exam Syllabus', icon: BookOpen },
-                { label: 'Annual Calendar', icon: Calendar },
-                { label: 'Application FAQs', icon: HelpCircle },
-              ].map((res, idx) => (
-                <button
-                  key={idx}
-                  className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 transition-colors group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 group-hover:bg-blue-50 group-hover:text-[#0B469B] transition-colors">
-                      <res.icon className="w-4 h-4" />
-                    </div>
-                    <span className="text-sm font-bold text-slate-700">{res.label}</span>
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 group-hover:translate-x-0.5 transition-all" />
-                </button>
-              ))}
-            </div>
           </div>
         </section>
 
@@ -467,7 +489,7 @@ export default function Home() {
               },
               {
                 step: '4',
-                title: 'Download Hall Ticket',
+                title: 'Download Application',
                 desc: 'Stay tuned for exam date announcements and admit cards.',
               },
             ].map((node, index) => (
@@ -486,9 +508,97 @@ export default function Home() {
             ))}
           </div>
         </section>
+
+        {/* SECTION 6: Frequently Asked Questions (FAQ) */}
+        <section className="pt-6 w-full">
+          <div className="flex items-center gap-3 mb-8 px-2">
+            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-[#0B469B]">
+              <HelpCircle className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Frequently Asked Questions</h2>
+              <p className="text-sm text-slate-500 font-medium">Quick answers to common registration queries</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            {/* Category Sidebar (Scrollable row on mobile, Column on desktop) */}
+            <div className="lg:col-span-3 flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-4 lg:pb-0 scrollbar-hide">
+              {faqCategories.map((category) => (
+                <button
+                  key={category.name}
+                  onClick={() => {
+                    setActiveFaqCategory(category.name);
+                    setExpandedFaqIndex(0); // Reset to first item when switching tabs
+                  }}
+                  className={`text-left px-4 py-3.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap lg:whitespace-normal flex-shrink-0 ${
+                    activeFaqCategory === category.name 
+                      ? 'bg-[#0B469B] text-white shadow-md' 
+                      : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                  }`}
+                >
+                  {category.name}
+                </button>
+              ))}
+            </div>
+
+            {/* Accordion Content Area */}
+            <div className="lg:col-span-9 space-y-3">
+              {currentCategoryFaqs.map((faq, index) => {
+                const isExpanded = expandedFaqIndex === index;
+                return (
+                  <div 
+                    key={index} 
+                    className={`bg-white border rounded-2xl overflow-hidden transition-all duration-200 ${
+                      isExpanded ? 'border-[#0B469B] shadow-sm' : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <button
+                      onClick={() => setExpandedFaqIndex(isExpanded ? null : index)}
+                      className="w-full px-5 py-4 flex items-center justify-between text-left focus:outline-none"
+                    >
+                      <span className={`font-bold pr-6 text-[15px] ${isExpanded ? 'text-[#0B469B]' : 'text-slate-800'}`}>
+                        {faq.q}
+                      </span>
+                      <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isExpanded ? 'bg-blue-50' : 'bg-slate-50'}`}>
+                        <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-[#0B469B]' : 'text-slate-400'}`} />
+                      </div>
+                    </button>
+                    
+                    {/* Expandable Answer */}
+                    <div 
+                      className={`px-5 text-[14px] text-slate-600 leading-relaxed overflow-hidden transition-all duration-300 ease-in-out ${
+                        isExpanded ? 'max-h-96 pb-5 opacity-100' : 'max-h-0 opacity-0'
+                      }`}
+                    >
+                      <div className="pt-2 border-t border-slate-100">
+                        {faq.a}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              
+              <div className="mt-6 p-4 rounded-xl bg-slate-100 border border-slate-200 text-xs text-slate-500 leading-relaxed font-medium">
+                <span className="font-bold text-slate-700">Note:</span> This FAQ is a general reference and does not override the official recruitment notification[cite: 1]. In case of any conflict, the notification issued by Bihar Staff Selection Commission shall prevail[cite: 1].
+              </div>
+            </div>
+          </div>
+        </section>
+
       </main>
 
-
+      {/* Optional styling for hiding scrollbar on the mobile category tabs */}
+      <style>{`
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+      `}</style>
     </div>
   );
 }

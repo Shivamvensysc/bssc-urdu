@@ -20,6 +20,7 @@ interface DateSelectProps {
     year?: boolean;
   };
   required?: boolean;
+  disabled?: boolean;
   label?: string;
   hi?: string;
   note?: string;
@@ -39,6 +40,7 @@ interface SelectBoxProps {
   error?: string | false;
   children: React.ReactNode;
   className?: string;
+  disabled?: boolean;
   placeholder?: string;
 }
 
@@ -49,6 +51,7 @@ const SelectBox: React.FC<SelectBoxProps> = ({
   onBlur,
   error,
   children,
+  disabled,
   className = "",
   placeholder,
 }) => (
@@ -58,9 +61,12 @@ const SelectBox: React.FC<SelectBoxProps> = ({
       value={value}
       onChange={onChange}
       onBlur={onBlur}
+      disabled={disabled}
       className={`w-full border rounded-lg appearance-none pr-9 px-4 py-3 text-[15px] outline-none transition-colors ${
         error ? "border-red-500" : "border-[#B9C2BD]"
-      } focus:border-[#003A2B] ${className}`}
+      } focus:border-[#003A2B] ${
+        disabled ? "bg-gray-100 cursor-not-allowed opacity-70" : "bg-white" // Add disabled styling
+      } ${className}`}
       style={{ color: "#12233F" }}
     >
       <option value="">{placeholder || "Select"}</option>
@@ -96,6 +102,7 @@ const DateSelect: React.FC<DateSelectProps> = ({
   errors = {},
   touched = {},
   required = false,
+  disabled=false,
   label,
   hi,
   note,
@@ -134,6 +141,7 @@ const DateSelect: React.FC<DateSelectProps> = ({
         onBlur={handleBlur("day")}
         error={touched?.day && errors?.day}
         placeholder={dayLabel}
+        disabled={disabled}
       >
         {days.map((d) => (
           <option key={d} value={d}>
@@ -148,6 +156,7 @@ const DateSelect: React.FC<DateSelectProps> = ({
         onBlur={handleBlur("month")}
         error={touched?.month && errors?.month}
         placeholder={monthLabel}
+        disabled={disabled}
       >
         {MONTHS.map((m, i) => (
           <option key={m} value={i + 1}>
@@ -162,6 +171,7 @@ const DateSelect: React.FC<DateSelectProps> = ({
         onBlur={handleBlur("year")}
         error={touched?.year && errors?.year}
         placeholder={yearLabel}
+        disabled={disabled}
       >
         {years.map((y) => (
           <option key={y} value={y}>

@@ -1,5 +1,3 @@
-// types/interfaces.ts
-
 export interface PersonalData {
   nationality?: string;
   sameAsPermanent?: boolean;
@@ -24,8 +22,6 @@ export interface PersonalData {
   natureOfDisability?: string;
   disabilityPercent?: string;
   exServiceman?: string;
-  nccCadet?: string;
-  nccCertificateNo?: string;
   wardOfFreedomFighter?: string;
   freedomFighterCertNo?: string;
   freedomFighterAuthority?: string;
@@ -82,7 +78,10 @@ export interface EducationBlock {
 export interface PhotoData {
   photograph?: string;          // Changed from passportPhoto
   signatureEnglish?: string;    // Changed from signatureEn
-  signatureHindi?: string;      // Changed from signatureHi
+  signatureHindi?: string;  
+  experienceCertificate?: string;
+  agreementCopy?: string;
+  [key: string]: any;    // Changed from signatureHi
 }
 
 export interface LivePhotoData {
@@ -141,6 +140,7 @@ export interface PillGroupProps {
   value: string;
   onChange: (value: string) => void;
   options: string[];
+  disabled : boolean;
 }
 
 export interface SectionTitleProps {

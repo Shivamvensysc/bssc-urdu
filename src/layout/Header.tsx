@@ -37,12 +37,12 @@ export default function Header({ onLoginClick, onRegisterClick }: HeaderProps) {
             <a href="#" className="text-[#0B469B] border-b-2 border-[#0B469B] pb-1 transition-colors">
               Home
             </a>
-            <a href="#" className="hover:text-[#0B469B] transition-colors">
+            {/* <a href="#" className="hover:text-[#0B469B] transition-colors">
               Notice Board
             </a>
             <a href="#" className="hover:text-[#0B469B] transition-colors">
               Contact
-            </a>
+            </a> */}
           </nav>
         </div>
         <div className="hidden lg:flex items-center space-x-5">

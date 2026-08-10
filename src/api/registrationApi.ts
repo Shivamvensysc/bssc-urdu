@@ -8,8 +8,8 @@
  * auth headers, retry logic, etc.
  */
 
-import axios from "axios";
 
+import api from "./interceptor";
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
 /* ---------------------------------------------------------------
@@ -75,7 +75,7 @@ export interface DisabilitiesResponse {
 
 /** Fetch the full category / sub-category (caste) tree. */
 export async function fetchCategoriesApi(): Promise<Category[]> {
-  const response = await axios.get<CategoriesResponse>(`${BASE_URL}/categories`);
+  const response = await api.get<CategoriesResponse>(`${BASE_URL}/categories`);
   const body = response.data;
   if (!response.status || !body.success) {
     throw new Error(body.message || "Failed to load categories");
@@ -85,7 +85,7 @@ export async function fetchCategoriesApi(): Promise<Category[]> {
 
 /** Fetch the ex-serviceman / officer type list. */
 export async function fetchExOfficerTypesApi(): Promise<ExOfficerType[]> {
-  const response = await axios.get<ExOfficerResponse>(
+  const response = await api.get<ExOfficerResponse>(
     `${BASE_URL}/public/type-of-ex-officer`,
   );
   const body = response.data;
@@ -97,7 +97,7 @@ export async function fetchExOfficerTypesApi(): Promise<ExOfficerType[]> {
 
 /** Fetch the disability type list. */
 export async function fetchDisabilitiesApi(): Promise<Disability[]> {
-  const response = await axios.get<DisabilitiesResponse>(`${BASE_URL}/disabilities`);
+  const response = await api.get<DisabilitiesResponse>(`${BASE_URL}/disabilities`);
   const body = response.data;
   if (!response.status || !body.success) {
     throw new Error(body.message || "Failed to load disabilities");
@@ -110,7 +110,7 @@ export async function fetchCaptchaApi(): Promise<{
   captchaId: string;
   captchaSvg: string;
 }> {
-  const response = await axios.get<CaptchaResponse>(`${BASE_URL}/auth/captcha`);
+  const response = await api.get<CaptchaResponse>(`${BASE_URL}/auth/captcha`);
   const body = response.data;
   if (!response.status || !body.success) {
     throw new Error(body.message || "Failed to load CAPTCHA");
@@ -128,7 +128,7 @@ export async function validateCaptchaApi(
   captchaId: string,
   captchaText: string,
 ): Promise<CaptchaValidateResponse> {
-  const response = await axios.post<CaptchaValidateResponse>(
+  const response = await api.post<CaptchaValidateResponse>(
     `${BASE_URL}/auth/captcha/validate`,
     { captchaId, captchaText },
     { headers: { "Content-Type": "application/json" } },
