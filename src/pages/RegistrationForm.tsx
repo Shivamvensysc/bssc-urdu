@@ -3709,7 +3709,7 @@ const disabilityAuthorityOptions = ["Civil Surgeon/Chief Medical Officer", "Supr
     {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
   </button>
                 </div>
-                {data.confirmPassword.length > 0 && (
+                {/* {data.confirmPassword.length > 0 && (
                   <div
                     className="mt-2 flex items-center gap-1.5 text-[10.5px] font-bold transition-colors"
                     style={{
@@ -3726,7 +3726,15 @@ const disabilityAuthorityOptions = ["Civil Surgeon/Chief Medical Officer", "Supr
                       ? "Passwords match"
                       : "Passwords do not match"}
                   </div>
-                )}
+                )} */}
+                {data.confirmPassword.length > 0 && data.confirmPassword === data.password && (
+  <div
+    className="mt-2 flex items-center gap-1.5 text-[10.5px] font-bold transition-colors"
+    style={{ color: TEAL }}
+  >
+    <CheckCircle2 size={14} /> Passwords match
+  </div>
+)}
               </Field>
             </div>
 

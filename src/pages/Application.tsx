@@ -3577,19 +3577,50 @@ const Step2Payment: React.FC<Step2Props & { applicationId?: string }> = ({
           return;
         }
 
-        if (orderData?.htmlForm) {
-          notifySuccess(`Redirecting to ${v.gatewayChoice.toUpperCase()} payment gateway...`);
-          document.open();
-          document.write(orderData.htmlForm);
-          document.close();
+        // if (orderData?.htmlForm) {
+        //   notifySuccess(`Redirecting to ${v.gatewayChoice.toUpperCase()} payment gateway...`);
+        //   document.open();
+        //   document.write(orderData.htmlForm);
+        //   document.close();
+        //   return;
+        // }
+
+        // const msg = "HTML form not received from server.";
+        // setFeeError(msg);
+        // notifyError(msg);
+        // setFeePayment((prev) => ({ ...prev, paymentStatus: "failed" }));
+        // return;
+
+        // ── SBI GATEWAY HANDLER (HTML Form Submission) ──
+        if (v.gatewayChoice === "sbi") {
+          if (orderData?.htmlForm) {
+            notifySuccess("Redirecting to SBI payment gateway...");
+            document.open();
+            document.write(orderData.htmlForm);
+            document.close();
+            return;
+          }
+          const msg = "SBI HTML form not received from server.";
+          setFeeError(msg);
+          notifyError(msg);
+          setFeePayment((prev) => ({ ...prev, paymentStatus: "failed" }));
           return;
         }
 
-        const msg = "HTML form not received from server.";
-        setFeeError(msg);
-        notifyError(msg);
-        setFeePayment((prev) => ({ ...prev, paymentStatus: "failed" }));
-        return;
+        // ── ICICI GATEWAY HANDLER (URL Redirect) ──
+        if (v.gatewayChoice === "icici") {
+          if (orderData?.paymentUrl) {
+            notifySuccess("Redirecting to ICICI payment gateway...");
+            window.location.href = orderData.paymentUrl;
+            return;
+          }
+          const msg = "ICICI Payment URL not received from server.";
+          setFeeError(msg);
+          notifyError(msg);
+          setFeePayment((prev) => ({ ...prev, paymentStatus: "failed" }));
+          return;
+        }
+
       }
 
       const msg = response.data?.message || "Payment initiation failed.";
