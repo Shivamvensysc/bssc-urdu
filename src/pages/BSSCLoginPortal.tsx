@@ -435,7 +435,7 @@ export const BSSCLoginPortal: React.FC = () => {
                         className="block text-[14px] font-semibold mb-2"
                         style={{ color: INK }}
                       >
-                        Registration Number
+                        Registration Number /Email Id
                       </label>
                       <div className="relative">
                         <span

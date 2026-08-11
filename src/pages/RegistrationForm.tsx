@@ -1,4 +1,5 @@
 // //current new working code 
+
 import React, {
   useState,
   useEffect,
@@ -171,6 +172,7 @@ export interface FormData extends RegistrationFormData {
    organizationName: string;           // Organization Name
   nameOfPost: string;   
 
+
 catCertAuth?: string;
 disTypePersist?: string;
 disCertAuthOth?: string;
@@ -179,6 +181,9 @@ disCertIssueDt?: string;
 registrationNumber?: string;
 registrationNo?: string;
 catCertIssueDt?: string;
+
+
+
 
   // NEW — the candidate's real, permanent login password. Collected here
   // instead of on a separate post-OTP "Set Password" screen, and sent
@@ -1085,6 +1090,7 @@ case "contractualToYear":
         case "categoryIssueDateMonth":
         case "categoryIssueDateYear":
              if (all.isBiharDomicile === "NO") return "";
+             if (all.isNonCreamyLayer === "NO") return "";
           if (
             all.isBiharDomicile === "YES" &&
             all.category !== "" &&
@@ -1096,6 +1102,7 @@ case "contractualToYear":
           return "";
         case "categoryAuthority":
              if (all.isBiharDomicile === "NO") return "";
+             if (all.isNonCreamyLayer === "NO") return "";
           if (
             all.isBiharDomicile === "YES" &&
             all.category !== "" &&
@@ -1164,7 +1171,9 @@ case "contractualToYear":
         }
         return "";
         
-    
+      
+        
+        
       case "nameOfPost":
         if (all.isBiharDomicile === "NO") return "";
         if (all.isContractualEmployee === "YES" && !value) {
@@ -1492,6 +1501,26 @@ next.contractualToYear = "";
     }
 
    
+    // If Non-Creamy Layer is NO, clear category certificate fields and their errors
+    if (name === "isNonCreamyLayer" && value === "NO") {
+      next.categoryCertNo = "";
+      next.categoryIssueDateDay = "";
+      next.categoryIssueDateMonth = "";
+      next.categoryIssueDateYear = "";
+      next.categoryAuthority = "";
+      next.categoryAuthorityOther = "";
+      
+      // Clear any stale validation errors for these hidden fields
+      setErrors((prev) => ({
+        ...prev,
+        categoryCertNo: "",
+        categoryIssueDateDay: "",
+        categoryIssueDateMonth: "",
+        categoryIssueDateYear: "",
+        categoryAuthority: "",
+        categoryAuthorityOther: ""
+      }));
+    }
     
 
     if (name === "hasAgreement" && value === "NO") {
@@ -2270,11 +2299,18 @@ const handleContractualToDateBlur = (field: "day" | "month" | "year") => {
     setTimeout(() => navigate("/login"), 1500);
   };
 
+  // // Check if category requires certificate (compares the mapped code, not the raw label — see bug-fix note above)
+  // const showCategoryCert =
+  //   data.isBiharDomicile === "YES" &&
+  //   !!data.category &&
+  //   mapCategoryLabelToCode(data.category) !== "UR";
+
   // Check if category requires certificate (compares the mapped code, not the raw label — see bug-fix note above)
   const showCategoryCert =
     data.isBiharDomicile === "YES" &&
     !!data.category &&
-    mapCategoryLabelToCode(data.category) !== "UR";
+    mapCategoryLabelToCode(data.category) !== "UR" &&
+    data.isNonCreamyLayer !== "NO"; // ADDED THIS: Hide if Non-Creamy Layer is NO
 
   // Check if disability certificate is required
   const showDisabilityCert = data.isBiharDomicile === "YES" && data.isPwD === "YES";
@@ -2523,7 +2559,7 @@ const disabilityAuthorityOptions = ["Civil Surgeon/Chief Medical Officer", "Supr
               hi="आवेदक का नाम"
               required
               error={touched.applicantName && errors.applicantName}
-              note="Enter your name exactly as in your Matriculation / Secondary examination certificate. Do not use prefixes such as Mr. or Ms."
+              note="Enter your name exactly As per in your Matriculation / 10th standard or equivalent certificate."
             >
               <input
                 type="text"
@@ -3488,118 +3524,8 @@ const disabilityAuthorityOptions = ["Civil Surgeon/Chief Medical Officer", "Supr
           </div>
 
 
-           {/* SECTION 4B — MOBILE VERIFICATION
-              Separate card, below the Email block. Mobile + Confirm Mobile
-              stay here, with their own "Verify Mobile" button right
-              underneath. Disabled until emailVerified is true — same
-              handleVerifyMobileClick as before, only its JSX position and
-              surrounding card changed. */}
-          <div
-            id="mobile-verification-section"
-            className="rounded-2xl p-6 md:p-8"
-            style={{ background: CARD, border: `1.5px solid ${LINE}` }}
-          >
-            <div className="flex items-center gap-2 mb-6">
-              <Smartphone size={17} style={{ color: OCHRE }} />
-              <h2
-                className="rf-display text-lg font-semibold"
-                style={{ color: INK }}
-              >
-                Mobile Verification
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Field
-                label="Mobile number"
-                hi="मोबाइल नम्बर"
-                required
-                error={touched.mobileNo && errors.mobileNo}
-                note="Keep this number active to receive communication about the recruitment process."
-              >
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  name="mobileNo"
-                  value={data.mobileNo}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  disabled={emailVerified}
-                  className={`rf-input rf-mono ${
-                    touched.mobileNo && errors.mobileNo ? "rf-error" : ""
-                  }`}
-                  placeholder="10 digit mobile number"
-                  maxLength={10}
-                />
-              </Field>
-
-              <Field
-                label="Confirm mobile number"
-                hi="मोबाइल नंबर की पुष्टि"
-                required
-                error={touched.confirmMobileNo && errors.confirmMobileNo}
-              >
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  name="confirmMobileNo"
-                  value={data.confirmMobileNo}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  onPaste={(e) => e.preventDefault()}
-                  onCopy={(e) => e.preventDefault()}
-                  onCut={(e) => e.preventDefault()}
-                  disabled={emailVerified}
-                  className={`rf-input rf-mono ${
-                    touched.confirmMobileNo && errors.confirmMobileNo
-                      ? "rf-error"
-                      : ""
-                  }`}
-                  placeholder="Re-enter mobile number"
-                  maxLength={10}
-                />
-              </Field>
-            </div>
-
-            {!emailVerified && (
-              <div
-                className="text-[11.5px] font-semibold mb-2"
-                style={{ color: OCHRE_DEEP }}
-              >
-                Verify your email above first to enable mobile verification.
-              </div>
-            )}
-
-            {/* VERIFY MOBILE — inline, right under the mobile fields. */}
-            <div className="flex justify-end mt-4">
-              <button
-                onClick={handleVerifyMobileClick}
-                disabled={!emailVerified || mobileVerified || mobileOtpLoading}
-                className="px-7 py-3 rounded-full font-extrabold text-sm text-white flex items-center justify-center gap-2 min-w-[190px] transition-opacity"
-                style={{
-                  background: mobileVerified
-                    ? TEAL
-                    : !emailVerified || mobileOtpLoading
-                    ? "#8B93A0"
-                    : INK,
-                }}
-              >
-                {mobileVerified ? (
-                  <>
-                    <CheckCircle2 size={16} /> MOBILE VERIFIED
-                  </>
-                ) : mobileOtpLoading ? (
-                  <>
-                    <Loader2 size={16} className="rf-spin" /> SENDING…
-                  </>
-                ) : (
-                  <>
-                    <Smartphone size={16} /> VERIFY MOBILE
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
+          
+          
 
           {/* SECTION 4A — EMAIL VERIFICATION
               Email + Confirm Email + Password + Confirm Password + CAPTCHA
@@ -3804,6 +3730,85 @@ const disabilityAuthorityOptions = ["Civil Surgeon/Chief Medical Officer", "Supr
               </Field>
             </div>
 
+            {/* --- 2. MOBILE VERIFICATION (Moved inside here) --- */}
+            <div id="mobile-verification-section" className="mb-6">
+              <div className="flex items-center gap-2 mb-6">
+                <Smartphone size={17} style={{ color: OCHRE }} />
+                <h2
+                  className="rf-display text-lg font-semibold"
+                  style={{ color: INK }}
+                >
+                  Mobile
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Field
+                  label="Mobile number"
+                  hi="मोबाइल नम्बर"
+                  required
+                  error={touched.mobileNo && errors.mobileNo}
+                  note="Keep this number active to receive communication about the recruitment process."
+                >
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    name="mobileNo"
+                    value={data.mobileNo}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    disabled={emailVerified}
+                    className={`rf-input rf-mono ${
+                      touched.mobileNo && errors.mobileNo ? "rf-error" : ""
+                    }`}
+                    placeholder="10 digit mobile number"
+                    maxLength={10}
+                  />
+                </Field>
+
+                <Field
+                  label="Confirm mobile number"
+                  hi="मोबाइल नंबर की पुष्टि"
+                  required
+                  error={touched.confirmMobileNo && errors.confirmMobileNo}
+                >
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    name="confirmMobileNo"
+                    value={data.confirmMobileNo}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    onPaste={(e) => e.preventDefault()}
+                    onCopy={(e) => e.preventDefault()}
+                    onCut={(e) => e.preventDefault()}
+                    disabled={emailVerified}
+                    className={`rf-input rf-mono ${
+                      touched.confirmMobileNo && errors.confirmMobileNo
+                        ? "rf-error"
+                        : ""
+                    }`}
+                    placeholder="Re-enter mobile number"
+                    maxLength={10}
+                  />
+                </Field>
+              </div>
+
+              {!emailVerified && (
+                <div
+                  className="text-[11.5px] font-semibold mt-2"
+                  style={{ color: OCHRE_DEEP }}
+                >
+                  Verify your email below first to enable mobile verification.
+                </div>
+              )}
+
+             
+             
+            </div>
+
+            <hr className="my-8" style={{ borderColor: LINE }} />
+
             {/* CAPTCHA — validated as part of the same "Verify Email" click,
                 so it stays inside this card too. */}
             <div
@@ -3880,7 +3885,38 @@ const disabilityAuthorityOptions = ["Civil Surgeon/Chief Medical Officer", "Supr
                 the Cognito user with the real password, and opens the email
                 OTP modal. Same handleVerifyEmail as before — only its JSX
                 position changed. */}
-            <div className="flex justify-end mt-6">
+            {/* VERIFY BUTTONS ROW (Mobile & Email Side-by-Side) */}
+            <div className="flex flex-wrap items-center justify-end gap-4 mt-6">
+              
+              {/* 1. VERIFY MOBILE BUTTON */}
+              <button
+                onClick={handleVerifyMobileClick}
+                disabled={!emailVerified || mobileVerified || mobileOtpLoading}
+                className="px-7 py-3 rounded-full font-extrabold text-sm text-white flex items-center justify-center gap-2 min-w-[190px] transition-opacity"
+                style={{
+                  background: mobileVerified
+                    ? TEAL
+                    : !emailVerified || mobileOtpLoading
+                    ? "#8B93A0"
+                    : INK,
+                }}
+              >
+                {mobileVerified ? (
+                  <>
+                    <CheckCircle2 size={16} /> MOBILE VERIFIED
+                  </>
+                ) : mobileOtpLoading ? (
+                  <>
+                    <Loader2 size={16} className="rf-spin" /> SENDING…
+                  </>
+                ) : (
+                  <>
+                    <Smartphone size={16} /> VERIFY MOBILE
+                  </>
+                )}
+              </button>
+
+              {/* 2. VERIFY EMAIL BUTTON */}
               <button
                 onClick={handleVerifyEmail}
                 disabled={loading || isValidatingCaptcha || emailVerified}

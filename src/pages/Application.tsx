@@ -735,13 +735,52 @@ const toIso = (day: string, month: string, year: string): string =>
    whenever auto-fill ran. splitDateString + buildDateTrioUpdates fix
    that in one place, for every date on the form.
 --------------------------------------------------------------- */
+// const splitDateString = (
+//   raw?: string | null,
+// ): { day: string; month: string; year: string } => {
+//   if (!raw || typeof raw !== "string") return { day: "", month: "", year: "" };
+//   const trimmed = raw.trim();
+
+//   // ISO: "YYYY-MM-DD" (also matches "YYYY-MM-DDTHH:mm:ss.sssZ")
+//   const iso = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+//   if (iso) {
+//     return {
+//       day: String(parseInt(iso[3], 10)),
+//       month: String(parseInt(iso[2], 10)),
+//       year: iso[1],
+//     };
+//   }
+
+//   // "DD-MM-YYYY" or "DD/MM/YYYY" — the format step0 sends dateOfBirth in
+//   const dmy = trimmed.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+//   if (dmy) {
+//     return {
+//       day: String(parseInt(dmy[1], 10)),
+//       month: String(parseInt(dmy[2], 10)),
+//       year: dmy[3],
+//     };
+//   }
+
+//   return { day: "", month: "", year: "" };
+// };
+
+// Maps every "flat date field" this form deals with to the trio prefix
+// its DateSelect uses internally.
+
+// Add this small helper above splitDateString to strip leading zeros safely
+const unpad = (val?: string | number | null): string => {
+  if (!val) return "";
+  const parsed = parseInt(String(val), 10);
+  return isNaN(parsed) ? String(val) : String(parsed);
+};
+
 const splitDateString = (
   raw?: string | null,
 ): { day: string; month: string; year: string } => {
   if (!raw || typeof raw !== "string") return { day: "", month: "", year: "" };
   const trimmed = raw.trim();
 
-  // ISO: "YYYY-MM-DD" (also matches "YYYY-MM-DDTHH:mm:ss.sssZ")
+  // ISO: "YYYY-MM-DD"
   const iso = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (iso) {
     return {
@@ -751,7 +790,7 @@ const splitDateString = (
     };
   }
 
-  // "DD-MM-YYYY" or "DD/MM/YYYY" — the format step0 sends dateOfBirth in
+  // "DD-MM-YYYY" or "DD/MM/YYYY"
   const dmy = trimmed.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
   if (dmy) {
     return {
@@ -764,8 +803,6 @@ const splitDateString = (
   return { day: "", month: "", year: "" };
 };
 
-// Maps every "flat date field" this form deals with to the trio prefix
-// its DateSelect uses internally.
 const DATE_FIELD_MAP: Record<string, string> = {
   dateOfBirth: "dob",
   categoryIssueDate: "categoryIssueDate",
@@ -906,9 +943,28 @@ const Step1Personal: React.FC<
   const setField = (k: string, val: string | boolean) =>
     setV((p) => ({ ...p, [k]: val }));
 
+  // const setDatePart = (prefix: string, part: DatePart, value: string) => {
+  //   setV((p) => ({ ...p, [`${prefix}${part[0].toUpperCase()}${part.slice(1)}`]: value }));
+  // };
+
   const setDatePart = (prefix: string, part: DatePart, value: string) => {
-    setV((p) => ({ ...p, [`${prefix}${part[0].toUpperCase()}${part.slice(1)}`]: value }));
+    setV((p) => {
+      const nextState = { ...p, [`${prefix}${part[0].toUpperCase()}${part.slice(1)}`]: value };
+      
+      // Prevent future dates for Domicile Issue Date (and others)
+      const day = nextState[`${prefix}Day`] || "";
+      const month = nextState[`${prefix}Month`] || "";
+      const year = nextState[`${prefix}Year`] || "";
+      
+      if (prefix === "domicileIssueDate" && isFutureDate(day, month, year)) {
+        notifyError("Future date is not allowed for Domicile Issue Date.");
+        return p; // Reject the change, keep previous state
+      }
+
+      return nextState;
+    });
   };
+
   const touchDateTrio = (prefix: string) => {
     setTouched((p) => ({
       ...p,
@@ -917,11 +973,19 @@ const Step1Personal: React.FC<
       [`${prefix}Year`]: true,
     }));
   };
+  // const dateValue = (prefix: string) => ({
+  //   day: v[`${prefix}Day`] || "",
+  //   month: v[`${prefix}Month`] || "",
+  //   year: v[`${prefix}Year`] || "",
+  // });
+
   const dateValue = (prefix: string) => ({
-    day: v[`${prefix}Day`] || "",
-    month: v[`${prefix}Month`] || "",
+    day: unpad(v[`${prefix}Day`]),
+    month: unpad(v[`${prefix}Month`]),
     year: v[`${prefix}Year`] || "",
   });
+
+
   const dateTouched = (prefix: string) => ({
     day: !!touched[`${prefix}Day`],
     month: !!touched[`${prefix}Month`],
@@ -1062,8 +1126,19 @@ const Step1Personal: React.FC<
 
   // Resolve nationalityId if only the nationality label is known
   // (e.g. coming from a previously saved step1 or the step0 autofill).
+  // useEffect(() => {
+  //   if (v.nationality && v.nationality !== "OTHER" && !v.nationalityId && countries.length > 0) {
+  //     const match = countries.find(
+  //       (c) => c.countryName.toUpperCase() === String(v.nationality).toUpperCase(),
+  //     );
+  //     if (match) setV((p) => ({ ...p, nationalityId: String(match.countryId) }));
+  //   }
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [countries, v.nationality]);
+
+  // Resolve nationalityId if only the nationality label is known
   useEffect(() => {
-    if (v.nationality && v.nationality !== "OTHER" && !v.nationalityId && countries.length > 0) {
+    if (v.nationality && !v.nationalityId && countries.length > 0) {
       const match = countries.find(
         (c) => c.countryName.toUpperCase() === String(v.nationality).toUpperCase(),
       );
@@ -1185,18 +1260,28 @@ const Step1Personal: React.FC<
     }));
   };
 
+  // const handleNationalityChange = (e: ChangeEvent<HTMLSelectElement>) => {
+  //   const label = e.target.value;
+  //   if (label === "OTHER") {
+  //     setV((p) => ({ ...p, nationality: "OTHER", nationalityId: "" }));
+  //     return;
+  //   }
+  //   const selected = countries.find((c) => c.countryName === label);
+  //   setV((p) => ({
+  //     ...p,
+  //     nationality: label,
+  //     nationalityId: selected ? String(selected.countryId) : "",
+  //     otherNationality: "",
+  //   }));
+  // };
+
   const handleNationalityChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const label = e.target.value;
-    if (label === "OTHER") {
-      setV((p) => ({ ...p, nationality: "OTHER", nationalityId: "" }));
-      return;
-    }
     const selected = countries.find((c) => c.countryName === label);
     setV((p) => ({
       ...p,
       nationality: label,
       nationalityId: selected ? String(selected.countryId) : "",
-      otherNationality: "",
     }));
   };
 
@@ -1271,7 +1356,11 @@ useEffect(() => {
     }));
   };
 
-  const showCategoryDocs = !!v.category && mapCategoryLabelToCode(v.category) !== "UR";
+  // const showCategoryDocs = !!v.category && mapCategoryLabelToCode(v.category) !== "UR";
+  const showCategoryDocs = 
+    !!v.category && 
+    mapCategoryLabelToCode(v.category) !== "UR" && 
+    v.isNonCreamyLayer !== "NO";
   const showNonCreamy = v.category && mapCategoryLabelToCode(v.category) !== "UR";
   const isBiharDomicile = v.domicileOfBihar === "YES";
   const isPwD = isBiharDomicile && v.disability === "YES";
@@ -1426,11 +1515,22 @@ useEffect(() => {
       }
     }
 
+    // if (isBiharDomicile) {
+    //   if (!String(v.domicileCertificateNumber || "").trim()) e.domicileCertificateNumber = "Domicile certificate number is required";
+    //   if (!v.domicileCertificateAuthority) e.domicileCertificateAuthority = "Domicile issuing authority is required";
+    //   if (!isRealDate(v.domicileIssueDateDay, v.domicileIssueDateMonth, v.domicileIssueDateYear))
+    //     e.domicileIssueDateDay = "Domicile issue date is required";
+    // }
+
     if (isBiharDomicile) {
       if (!String(v.domicileCertificateNumber || "").trim()) e.domicileCertificateNumber = "Domicile certificate number is required";
       if (!v.domicileCertificateAuthority) e.domicileCertificateAuthority = "Domicile issuing authority is required";
-      if (!isRealDate(v.domicileIssueDateDay, v.domicileIssueDateMonth, v.domicileIssueDateYear))
+      
+      if (!isRealDate(v.domicileIssueDateDay, v.domicileIssueDateMonth, v.domicileIssueDateYear)) {
         e.domicileIssueDateDay = "Domicile issue date is required";
+      } else if (isFutureDate(v.domicileIssueDateDay, v.domicileIssueDateMonth, v.domicileIssueDateYear)) {
+        e.domicileIssueDateDay = "Issue date cannot be in the future";
+      }
     }
 
     if (isContractual) {
@@ -1621,19 +1721,8 @@ useEffect(() => {
                   {c.countryName}
                 </option>
               ))}
-              <option value="OTHER">Other</option>
             </SelectBox>
           </Field>
-          {v.nationality === "OTHER" && (
-            <Field label="Other Nationality" hi="अन्य राष्ट्रीयता" required>
-              <input
-                className="gf-input"
-                value={v.otherNationality || ""}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => setField("otherNationality", e.target.value)}
-                placeholder="Enter your nationality"
-              />
-            </Field>
-          )}
 
           <Field label="Email ID" hi="ईमेल आईडी" required error={errors.emailId}>
             <input
@@ -1920,7 +2009,22 @@ useEffect(() => {
             <PillGroup
               name="isNonCreamyLayer"
               value={v.isNonCreamyLayer || ""}
-              onChange={(val) => setField("isNonCreamyLayer", val)}
+              // onChange={(val) => setField("isNonCreamyLayer", val)}
+              onChange={(val) => {
+                setField("isNonCreamyLayer", val);
+                // Clear the certificate data if they switch to "NO"
+                if (val === "NO") {
+                  setV((p) => ({
+                    ...p,
+                    categoryCertNo: "",
+                    categoryAuthority: "",
+                    categoryAuthorityOther: "",
+                    categoryIssueDateDay: "",
+                    categoryIssueDateMonth: "",
+                    categoryIssueDateYear: "",
+                  }));
+                }
+              }}
               options={YES_NO}
               disabled={isAutoFilled("isNonCreamyLayer")}
             />
@@ -3849,11 +3953,18 @@ const EducationBlock: React.FC<
   const section =
     (v[prefix as keyof EducationData] as any) || {};
 
+  // const dateVal = {
+  //   day: (section as any).certIssueDateDay || "",
+  //   month: (section as any).certIssueDateMonth || "",
+  //   year: (section as any).certIssueDateYear || "",
+  // };
+
   const dateVal = {
-    day: (section as any).certIssueDateDay || "",
-    month: (section as any).certIssueDateMonth || "",
+    day: unpad((section as any).certIssueDateDay),
+    month: unpad((section as any).certIssueDateMonth),
     year: (section as any).certIssueDateYear || "",
   };
+  
   const dateTouchedVal = {
     day: !!touched.certIssueDateDay,
     month: !!touched.certIssueDateMonth,
@@ -5059,13 +5170,23 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
       <span className="text-[12px] font-extrabold tracking-wide text-white">
         {title}
       </span>
-      <button
+      {/* <button
         onClick={() => onEdit(step)}
         className="flex items-center gap-1 text-[11px] font-bold transition-opacity hover:opacity-80"
         style={{ color: "#C9D3E0" }}
       >
         <Eye size={12} /> Edit
-      </button>
+      </button> */}
+      {/* Hide the Edit button ONLY if it is step 2 (Payment) */}
+      {step !== 2 && (
+        <button
+          onClick={() => onEdit(step)}
+          className="flex items-center gap-1 text-[11px] font-bold transition-opacity hover:opacity-80"
+          style={{ color: "#C9D3E0" }}
+        >
+          <Eye size={12} /> Edit
+        </button>
+      )}
     </div>
     <div className="p-5">{children}</div>
   </div>
@@ -5160,7 +5281,7 @@ const Step6Review: React.FC<Step6Props & { applicationId?: string; autoFill?: Re
           <ReviewRow label="Father's name" hi="पिता का नाम" value={p.fatherName} />
           <ReviewRow label="Mother's name" hi="माता का नाम" value={p.motherName} />
           <ReviewRow label="Gender" hi="लिंग" value={p.gender} />
-          <ReviewRow label="Nationality" hi="राष्ट्रीयता" value={p.nationality === "OTHER" ? p.otherNationality : p.nationality} />
+          <ReviewRow label="Nationality" hi="राष्ट्रीयता" value={p.nationality} />
           <ReviewRow label="Email ID" hi="ईमेल आईडी" value={p.emailId} />
           <ReviewRow label="Mobile number" hi="मोबाइल नम्बर" value={p.mobileNo || p.mobileNumber} />
           <ReviewRow label="Confirm mobile number" hi="मोबाइल नंबर की पुष्टि" value={p.confirmMobileNo} />
@@ -5427,7 +5548,7 @@ const Step6Review: React.FC<Step6Props & { applicationId?: string; autoFill?: Re
       </ReviewSection>
 
       {/* ── STEP 4 & 5 · PHOTOS ── */}
-      <ReviewSection title="STEP 4 & 5 · PHOTOS" step={4} onEdit={onEdit}>
+      {/* <ReviewSection title="STEP 4 & 5 · PHOTOS" step={4} onEdit={onEdit}>
         <div className="flex flex-wrap gap-5">
           {(ph.photograph || ph.passportPhoto) && (
             <div className="text-center">
@@ -5524,6 +5645,112 @@ const Step6Review: React.FC<Step6Props & { applicationId?: string; autoFill?: Re
               </div>
               <div className="text-[9px] font-bold mt-1 text-blue-600 underline">View PDF</div>
             </a>
+          )}
+        </div>
+      </ReviewSection> */}
+
+      {/* ── STEP 4 · PHOTO & DOCUMENT UPLOAD ── */}
+      <ReviewSection title="STEP 4 · PHOTO & DOCUMENT UPLOAD" step={4} onEdit={onEdit}>
+        <div className="flex flex-wrap gap-5">
+          {(ph.photograph || ph.passportPhoto) && (
+            <div className="text-center">
+              <img
+                src={ph.photograph || ph.passportPhoto}
+                alt="Passport"
+                className="w-20 h-24 object-cover rounded-lg"
+                style={{ border: `1px solid ${LINE}` }}
+              />
+              <div
+                className="text-[10.5px] font-semibold mt-1"
+                style={{ color: INK_SOFT }}
+              >
+                Passport photo · पासपोर्ट फोटो
+              </div>
+            </div>
+          )}
+          {(ph.signatureEnglish || ph.signatureEn) && (
+            <div className="text-center">
+              <img
+                src={ph.signatureEnglish || ph.signatureEn}
+                alt="Sig EN"
+                className="w-24 h-10 object-contain rounded-lg"
+                style={{ border: `1px solid ${LINE}` }}
+              />
+              <div
+                className="text-[10.5px] font-semibold mt-1"
+                style={{ color: INK_SOFT }}
+              >
+                Signature (English) · हस्ताक्षर (अंग्रेजी)
+              </div>
+            </div>
+          )}
+          {(ph.signatureHindi || ph.signatureHi) && (
+            <div className="text-center">
+              <img
+                src={ph.signatureHindi || ph.signatureHi}
+                alt="Sig HI"
+                className="w-24 h-10 object-contain rounded-lg"
+                style={{ border: `1px solid ${LINE}` }}
+              />
+              <div
+                className="text-[10.5px] font-semibold mt-1"
+                style={{ color: INK_SOFT }}
+              >
+                Signature (Hindi) · हस्ताक्षर (हिंदी)
+              </div>
+            </div>
+          )}
+          {ph.experienceCertificate && (
+            <a 
+              href={ph.experienceCertificate} 
+              target="_blank" 
+              rel="noreferrer" 
+              className="text-center flex flex-col items-center justify-center p-3 rounded-lg w-24 h-24 hover:bg-gray-50 transition-colors cursor-pointer" 
+              style={{ border: `1px solid ${LINE}`, textDecoration: 'none' }}
+            >
+              <ClipboardCheck size={28} style={{ color: TEAL }} />
+              <div className="text-[10px] font-semibold mt-2 leading-tight" style={{ color: INK_SOFT }}>
+                Experience<br/>Certificate
+              </div>
+              <div className="text-[9px] font-bold mt-1 text-blue-600 underline">View PDF</div>
+            </a>
+          )}
+          {ph.agreementCopy && (
+            <a 
+              href={ph.agreementCopy} 
+              target="_blank" 
+              rel="noreferrer" 
+              className="text-center flex flex-col items-center justify-center p-3 rounded-lg w-24 h-24 hover:bg-gray-50 transition-colors cursor-pointer" 
+              style={{ border: `1px solid ${LINE}`, textDecoration: 'none' }}
+            >
+              <ClipboardCheck size={28} style={{ color: TEAL }} />
+              <div className="text-[10px] font-semibold mt-2 leading-tight" style={{ color: INK_SOFT }}>
+                Agreement<br/>Copy
+              </div>
+              <div className="text-[9px] font-bold mt-1 text-blue-600 underline">View PDF</div>
+            </a>
+          )}
+        </div>
+      </ReviewSection>
+
+      {/* ── STEP 5 · LIVE PHOTO ── */}
+      <ReviewSection title="STEP 5 · LIVE PHOTO" step={5} onEdit={onEdit}>
+        <div className="flex flex-wrap gap-5">
+          {lp.livePhoto && (
+            <div className="text-center">
+              <img
+                src={lp.livePhoto}
+                alt="Live"
+                className="w-20 h-24 object-cover rounded-lg"
+                style={{ border: `2px solid ${TEAL}` }}
+              />
+              <div
+                className="text-[10.5px] font-bold mt-1 flex items-center justify-center gap-1"
+                style={{ color: TEAL }}
+              >
+                <CheckCircle2 size={12}/> Live photo · लाइव फोटो
+              </div>
+            </div>
           )}
         </div>
       </ReviewSection>
