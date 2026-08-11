@@ -886,14 +886,38 @@ type DatePart = "day" | "month" | "year";
 // returning to Step 1 — the raw oldRegistrationNumber sat unused in
 // state while the input read v.previousApplicationNumber, which was
 // always empty.
+// const withPreviousApplicationNumber = <T extends Record<string, any>>(
+//   obj: T | undefined | null,
+// ): T => {
+//   if (!obj) return {} as T;
+//   if (!obj.previousApplicationNumber && obj.oldRegistrationNumber) {
+//     return { ...obj, previousApplicationNumber: obj.oldRegistrationNumber };
+//   }
+//   return obj;
+// };
+
 const withPreviousApplicationNumber = <T extends Record<string, any>>(
   obj: T | undefined | null,
 ): T => {
   if (!obj) return {} as T;
-  if (!obj.previousApplicationNumber && obj.oldRegistrationNumber) {
-    return { ...obj, previousApplicationNumber: obj.oldRegistrationNumber };
+  const normalized = { ...obj };
+
+  if (!normalized.previousApplicationNumber && normalized.oldRegistrationNumber) {
+    normalized.previousApplicationNumber = normalized.oldRegistrationNumber;
   }
-  return obj;
+  
+  // FIX: Map step0 backend fields to step1 frontend state fields
+  if (!normalized.natureOfDisabilityType && normalized.disTypePersist) {
+    normalized.natureOfDisabilityType = normalized.disTypePersist;
+  }
+  if (!normalized.natureOfDisability && normalized.pwdType) {
+    normalized.natureOfDisability = normalized.pwdType;
+  }
+  if (!normalized.disabilityPercent && normalized.pwd40Percent) {
+    normalized.disabilityPercent = normalized.pwd40Percent;
+  }
+
+  return normalized;
 };
 
 const Step1Personal: React.FC<
@@ -932,13 +956,22 @@ const Step1Personal: React.FC<
   const [corrDistricts, setCorrDistricts] = useState<DistrictItem[]>([]);
   const [corrDistrictsLoading, setCorrDistrictsLoading] = useState(false);
 
-  const isAutoFilled = (key: string): boolean => {
-  return autoFill !== undefined && 
-         autoFill !== null && 
-         autoFill[key] !== undefined && 
-         autoFill[key] !== null && 
-         autoFill[key] !== "";
-};
+//   const isAutoFilled = (key: string): boolean => {
+//   return autoFill !== undefined && 
+//          autoFill !== null && 
+//          autoFill[key] !== undefined && 
+//          autoFill[key] !== null && 
+//          autoFill[key] !== "";
+// };
+
+const isAutoFilled = (...keys: string[]): boolean => {
+    if (!autoFill) return false;
+    return keys.some(key => 
+      autoFill[key] !== undefined && 
+      autoFill[key] !== null && 
+      autoFill[key] !== ""
+    );
+  };
 
   const setField = (k: string, val: string | boolean) =>
     setV((p) => ({ ...p, [k]: val }));
@@ -2098,7 +2131,7 @@ useEffect(() => {
       {isBiharDomicile && (
       <div>
         <SectionTitle icon={ShieldCheck}>Special Categories</SectionTitle>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+        {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
           <Field label="Person with disability?" hi="दिव्यांगता वाले व्यक्ति?" required error={errors.disability}>
             <PillGroup
               name="disability"
@@ -2163,6 +2196,81 @@ useEffect(() => {
                 onChange={(val) => setField("isScribeRequired", val)}
                 options={YES_NO}
                 disabled={isAutoFilled("isScribeRequired", "scribeRequired", "isScribe")}
+              />
+            </Field>
+          )}
+        </div> */}
+
+        {/* <SectionTitle icon={ShieldCheck}>Special Categories</SectionTitle> */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+          <Field label="Person with disability?" hi="दिव्यांगता वाले व्यक्ति?" required error={errors.disability}>
+            <PillGroup
+              name="disability"
+              value={v.disability || ""}
+              onChange={(val) => setField("disability", val)}
+              options={YES_NO}
+              disabled={isAutoFilled("disability")}
+            />
+          </Field>
+
+          {/* This wrapper ensures these 3 fields ONLY show if Person with Disability is YES */}
+          {isPwD && (
+            <>
+              <Field label="Type of disability" hi="दिव्यांगता का प्रकार" note={disabilitiesLoading ? "Loading disabilities..." : undefined}>
+                <SelectBox
+                  name="natureOfDisability"
+                  value={v.natureOfDisability || ""}
+                  onChange={(e: ChangeEvent<HTMLSelectElement>) => setField("natureOfDisability", e.target.value)}
+                  disabled={disabilitiesLoading || isAutoFilled("natureOfDisability", "pwdType")}
+                >
+                  <option value="">{disabilitiesLoading ? "Loading..." : "Select disability type"}</option>
+                  {disabilities.map((dis) => (
+                    <option key={dis.id} value={dis.name}>{dis.name}</option>
+                  ))}
+                </SelectBox>
+              </Field>
+
+              <Field
+                label="Nature of disability?"
+                hi="दिव्यांगता की प्रकृति"
+                required={isPwD}
+                error={errors.natureOfDisabilityType}
+              >
+                <PillGroup
+                  name="natureOfDisabilityType"
+                  value={v.natureOfDisabilityType || ""}
+                  onChange={(val) => setField("natureOfDisabilityType", val)}
+                  options={["PERMANENT", "TEMPORARY"]}
+                  disabled={isAutoFilled("natureOfDisabilityType", "disTypePersist")}
+                />
+              </Field>
+
+              <Field
+                label="Minimum 40% disability?"
+                hi="न्यूनतम 40% दिव्यांगता?"
+                required
+                error={errors.disabilityPercent}
+              >
+                <PillGroup
+                  name="disabilityPercent"
+                  value={v.disabilityPercent || ""}
+                  onChange={(val) => setField("disabilityPercent", val)}
+                  options={YES_NO_NA}
+                  disabled={isAutoFilled("disabilityPercent", "pwd40Percent")}
+                />
+              </Field>
+            </>
+          )}
+
+          {/* Scribe field only shows if Minimum 40% is YES */}
+          {isMin40PwD && (
+            <Field label="Is scribe required?" hi="क्या लेखक (स्क्राइब) की आवश्यकता है?" required error={errors.isScribeRequired}>
+              <PillGroup
+                name="isScribeRequired"
+                value={v.isScribeRequired || ""}
+                onChange={(val) => setField("isScribeRequired", val)}
+                options={YES_NO}
+                disabled={isAutoFilled("isScribeRequired", "scribeRequired", "isScribe", "isownscribe")}
               />
             </Field>
           )}
@@ -3591,7 +3699,7 @@ const Step2Payment: React.FC<Step2Props & { applicationId?: string }> = ({
         // setFeePayment((prev) => ({ ...prev, paymentStatus: "failed" }));
         // return;
 
-        // ── SBI GATEWAY HANDLER (HTML Form Submission) ──
+         // ── SBI GATEWAY HANDLER (HTML Form Submission) ──
         if (v.gatewayChoice === "sbi") {
           if (orderData?.htmlForm) {
             notifySuccess("Redirecting to SBI payment gateway...");
