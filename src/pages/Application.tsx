@@ -1569,8 +1569,8 @@ useEffect(() => {
     if (isContractual) {
       if (!v.nameOfPost) e.nameOfPost = "Name of post is required";
       if (!v.organizationName) e.organizationName = "Organization name is required";
-      if (!v.hasPostExperience)
-        e.hasPostExperience = "Please specify if you have experience in the advertised post";
+      // if (!v.hasPostExperience)
+      //   e.hasPostExperience = "Pxperience in the advertised post";
       if (
         !v.contractualFromDay || !v.contractualFromMonth || !v.contractualFromYear ||
         !v.contractualToDay || !v.contractualToMonth || !v.contractualToYear
@@ -2474,7 +2474,7 @@ useEffect(() => {
                   disabled={isAutoFilled("organizationName")} 
                 />
               </Field>
-              <Field
+              {/* <Field
                 label="Do you have experience in the post mentioned in this advertisement?"
                 hi="क्या आपके पास इस विज्ञापन में उल्लिखित पद का अनुभव है?"
                 required
@@ -2488,16 +2488,10 @@ useEffect(() => {
                     options={YES_NO}
                     disabled={isAutoFilled("hasPostExperience")} 
                   />
-                  {v.hasPostExperience === "NO" && (
-                    <div
-                      className="text-[11px] font-medium mt-1.5 p-2 rounded"
-                      style={{ color: DANGER, background: "#FBEAE6" }}
-                    >
-                      ⚠️ Otherwise, you will not be entitled for weightage.
-                    </div>
-                  )}
+                
+                
                 </div>
-              </Field>
+              </Field> */}
               <Field label="Name of post" hi="पद का नाम" required error={errors.nameOfPost}>
                 <input
                   className={`gf-input ${errors.nameOfPost ? "gf-error" : ""}`}
@@ -5528,7 +5522,7 @@ const Step6Review: React.FC<Step6Props & { applicationId?: string; autoFill?: Re
               {isContractual && (
                 <>
                   <ReviewRow label="Organization Name" hi="संगठन का नाम" value={p.organizationName} />
-                  <ReviewRow label="Experience in advertised post?" hi="विज्ञापित पद में अनुभव?" value={p.hasPostExperience} />
+                  {/* <ReviewRow label="Experience in advertised post?" hi="विज्ञापित पद में अनुभव?" value={p.hasPostExperience} /> */}
                   <ReviewRow label="Name of post" hi="पद का नाम" value={p.nameOfPost || p.postName} />
                   <ReviewRow label="Agreement under circular 1003?" hi="संकल्प 1003 के अनुसार एकरारनामा?" value={p.agreementCircular || p.hasAgreement} />
                   <ReviewRow label="Contractual service — from date" hi="संविदा सेवा अवधि — दिनांक से" value={formatDate(p.contractualFromDate)} />
