@@ -3884,11 +3884,11 @@ const Step2Payment: React.FC<Step2Props & { applicationId?: string }> = ({
                 </div>
               </div>
             </div>
-            {feeError && (
+            {/* {feeError && (
               <div className="mb-4">
                 <Note tone="danger">{feeError}</Note>
               </div>
-            )}
+            )} */}
 
             {/* ── MODIFIED: BEAUTIFUL GATEWAY SELECTION UI ── */}
             <Field
