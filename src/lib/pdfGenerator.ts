@@ -3279,7 +3279,8 @@ export async function generateRegistrationSlipPDF(
   pdf.rect(declPhotoX, declPhotoY, declPhotoW, declPhotoH, "F");
   pdf.rect(declPhotoX, declPhotoY, declPhotoW, declPhotoH);
 
-  const declPhoto = await urlToDataURL(data.photograph);
+  // const declPhoto = await urlToDataURL(data.photograph);
+  const declPhoto = await urlToDataURL(data.signatureEnglish || data.signatureHindi);
   if (declPhoto) {
     try {
       pdf.addImage(
