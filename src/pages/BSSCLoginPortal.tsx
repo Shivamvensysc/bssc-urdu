@@ -1386,7 +1386,7 @@ export const BSSCLoginPortal: React.FC = () => {
                           onChange={(e) => setRegNo(e.target.value)}
                           className="w-full py-3 border rounded-lg pl-11 pr-4 text-[15px] outline-none transition-colors"
                           style={{ borderColor: OCHRE, color: INK }}
-                          placeholder="Enter your registration number"
+                          placeholder="Enter your registration number / Email Id"
                         />
                       </div>
                       {/* NEW: Forgot Registration Number Link */}
