@@ -4604,6 +4604,20 @@ const [showPassword, setShowPassword] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
+  const [showNclPopup, setShowNclPopup] = useState(false);
+
+  // Auto-close the NCL popup after 10 seconds
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (showNclPopup) {
+      timer = setTimeout(() => {
+        setShowNclPopup(false);
+      }, 10000);
+    }
+    return () => clearTimeout(timer);
+  }, [showNclPopup]);
+
+
   /* ---------- Email / Mobile verification state ----------
      Replaces the old post-OTP "Set Password" screen. Registration now:
        1) VERIFY EMAIL button -> validates whole form + captcha + age
@@ -5498,6 +5512,7 @@ next.contractualToYear = "";
    
     // If Non-Creamy Layer is NO, clear category certificate fields and their errors
     if (name === "isNonCreamyLayer" && value === "NO") {
+      setShowNclPopup(true); // <--- ADD THIS LINE HERE
       next.categoryCertNo = "";
       next.categoryIssueDateDay = "";
       next.categoryIssueDateMonth = "";
@@ -5721,6 +5736,11 @@ next.contractualToYear = "";
     };
   };
 
+
+  // Revert the selection and close modal if the user cancels
+  const handleCancelNclPopup = () => {
+    setShowNclPopup(false);
+  };
   
   // Filter castes based on search term
   const filteredCastes = subCategories.filter(sub =>
@@ -7982,6 +8002,39 @@ const disabilityAuthorityOptions = ["Civil Surgeon/Chief Medical Officer", "Supr
         onResend={handleMobileOtpResend}
         onSkip={handleMobileOtpSkip}
       />
+
+
+      {/* NCL Warning Modal */}
+      {showNclPopup && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4" 
+          style={{ background: "rgba(18, 35, 63, 0.6)" }}
+        >
+          <div 
+            className="rf-pop bg-white rounded-xl shadow-xl p-6 max-w-sm w-full" 
+            style={{ border: `1.5px solid ${LINE}` }}
+          >
+            <div className="flex items-center gap-3 mb-3" style={{ color: DANGER }}>
+              <AlertCircle size={24} />
+              <h3 className="text-lg font-bold">Notice</h3>
+            </div>
+            
+            <p className="text-[14px] font-semibold mb-6 leading-relaxed" style={{ color: INK }}>
+              You will be treated Under UR category.
+            </p>
+            
+            <div className="flex justify-end">
+              <button
+                onClick={handleCancelNclPopup}
+                className="px-6 py-2.5 rounded-full font-bold text-sm transition-colors"
+                style={{ background: "#F4F5F2", color: INK }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
