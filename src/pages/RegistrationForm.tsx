@@ -7823,7 +7823,7 @@ const disabilityAuthorityOptions = ["Civil Surgeon/Chief Medical Officer", "Supr
                   className="text-[11.5px] font-semibold mt-2"
                   style={{ color: OCHRE_DEEP }}
                 >
-                  Verify your email below first to enable mobile verification.
+                  Verify your email  first to enable mobile verification.
                 </div>
               )}
 
