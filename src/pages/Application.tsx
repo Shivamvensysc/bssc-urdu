@@ -1820,10 +1820,10 @@ useEffect(() => {
         >
           <div>
             <div className="text-[11px] font-extrabold tracking-wide" style={{ color: OCHRE_DEEP }}>
-              AGE AS ON 01-08-2025
+              AGE AS ON 01-08-2026
             </div>
             <div className="text-[11px] font-medium" style={{ color: INK_SOFT }}>
-              दिनांक 01-08-2025 को आयु
+              दिनांक 01-08-2026 को आयु
             </div>
           </div>
           <div className="gf-mono text-lg font-bold" style={{ color: INK }}>
