@@ -206,6 +206,13 @@ export const applicationApi = {
       getAuthHeaders(),
     ),
 
+    sendFinalSubmitOtp: (applicationId: string) => 
+    api.post(
+      `${API_BASE_URL}/applications/${applicationId}/final-submit/send-otp`,
+      {}, // Empty body
+      getAuthHeaders()
+    ),
+
   saveStep1: (data: any) =>
     api.patch(`${API_BASE_URL}/auth/candidate/step-1`, data, getAuthHeaders()),
 
@@ -222,10 +229,20 @@ export const applicationApi = {
   saveStep5: (data: any) =>
     api.post(`${API_BASE_URL}/auth/candidate/step-5`, data, getMultipartHeaders()),
 
-  submitApplicationFinal: (applicationId: string) =>
+  // submitApplicationFinal: (applicationId: string) =>
+  //   api.post(
+  //     `${API_BASE_URL}/application/${applicationId}/submit-final`,
+  //     {applicationId},
+  //     getAuthHeaders(),
+  //   ),
+
+  submitApplicationFinal: (
+    applicationId: string,
+    payload: { otpRequestId: string; otpCode: string }
+  ) =>
     api.post(
       `${API_BASE_URL}/application/${applicationId}/submit-final`,
-      {applicationId},
+      payload, // Passes the OTP payload instead of {applicationId}
       getAuthHeaders(),
     ),
 };

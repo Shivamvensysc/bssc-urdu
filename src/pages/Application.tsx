@@ -5335,7 +5335,14 @@ const Step6Review: React.FC<Step6Props & { applicationId?: string; autoFill?: Re
 }) => {
   const [declared, setDeclared] = useState<boolean>(false);
   const [err, setErr] = useState<string>("");
+  // const [isSubmittingFinal, setIsSubmittingFinal] = useState(false);
+  // --- OTP STATE ---
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isSubmittingFinal, setIsSubmittingFinal] = useState(false);
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpRequestId, setOtpRequestId] = useState("");
+  const [otpValues, setOtpValues] = useState<string[]>(Array(6).fill(""));
+  const otpRefs = useRef<(HTMLInputElement | null)[]>(Array(6).fill(null));
   
   // Merge step0 (autoFill) and step1 (formData.personal) to get the complete picture
   const p: any = { ...autoFill, ...(formData.personal || {}) };
@@ -5346,7 +5353,40 @@ const Step6Review: React.FC<Step6Props & { applicationId?: string; autoFill?: Re
   const ph: any = formData.photos || {};
   const lp: any = formData.livePhoto || {};
 
-  const handleSubmit = async () => {
+  // const handleSubmit = async () => {
+  //   if (!declared) {
+  //     const msg = "You must accept the declaration to submit. · घोषणा स्वीकार करनी होगी।";
+  //     setErr(msg);
+  //     notifyError(msg);
+  //     return;
+  //   }
+
+  //   if (!applicationId) {
+  //     const msg = "Application not found. Please refresh and try again.";
+  //     setErr(msg);
+  //     notifyError(msg);
+  //     return;
+  //   }
+
+  //   setErr("");
+  //   try {
+  //     setIsSubmittingFinal(true);
+  //     await applicationApi.submitApplicationFinal(applicationId);
+  //   } catch (apiErr: any) {
+  //     const msg =
+  //       apiErr?.response?.data?.message || apiErr?.message || "Failed to submit application. Please try again.";
+  //     setErr(msg);
+  //     notifyError(msg);
+  //     return;
+  //   } finally {
+  //     setIsSubmittingFinal(false);
+  //   }
+  //   notifySuccess("Application submitted successfully.");
+  //   onSubmit();
+  // };
+
+  // --- 1. SEND OTP FUNCTION ---
+  const handleSendOtp = async () => {
     if (!declared) {
       const msg = "You must accept the declaration to submit. · घोषणा स्वीकार करनी होगी।";
       setErr(msg);
@@ -5363,19 +5403,91 @@ const Step6Review: React.FC<Step6Props & { applicationId?: string; autoFill?: Re
 
     setErr("");
     try {
-      setIsSubmittingFinal(true);
-      await applicationApi.submitApplicationFinal(applicationId);
+      setIsSendingOtp(true);
+      // Trigger OTP API
+      const res = await applicationApi.sendFinalSubmitOtp(applicationId);
+      
+      // Assume API returns otpRequestId in data
+      const id = res.data?.otpRequestId || res.data?.data?.otpRequestId;
+      if (id) {
+        setOtpRequestId(id);
+        setShowOtpModal(true);
+        // Reset OTP inputs
+        setOtpValues(Array(6).fill(""));
+        setTimeout(() => otpRefs.current[0]?.focus(), 100);
+      } else {
+        throw new Error("Invalid response from server. OTP Request ID missing.");
+      }
     } catch (apiErr: any) {
-      const msg =
-        apiErr?.response?.data?.message || apiErr?.message || "Failed to submit application. Please try again.";
+      const msg = apiErr?.response?.data?.message || apiErr?.message || "Failed to send OTP. Please try again.";
       setErr(msg);
       notifyError(msg);
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  // --- 2. FINAL SUBMIT OTP FUNCTION ---
+  const handleFinalSubmit = async () => {
+    const otpCode = otpValues.join("");
+    if (otpCode.length < 6) {
+      notifyError("Please enter the complete 6-digit OTP.");
       return;
+    }
+
+    try {
+      setIsSubmittingFinal(true);
+      // Submit Application with OTP
+      await applicationApi.submitApplicationFinal(applicationId!, {
+        otpRequestId,
+        otpCode,
+      });
+      
+      notifySuccess("Application submitted successfully.");
+      setShowOtpModal(false);
+      onSubmit();
+    } catch (apiErr: any) {
+      const msg = apiErr?.response?.data?.message || apiErr?.message || "Failed to submit application. Invalid OTP.";
+      notifyError(msg);
     } finally {
       setIsSubmittingFinal(false);
     }
-    notifySuccess("Application submitted successfully.");
-    onSubmit();
+  };
+
+  // --- OTP INPUT HANDLERS ---
+  const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return; // Only allow digits
+    const newOtp = [...otpValues];
+    newOtp[index] = value.substring(value.length - 1); // Take only last character
+    setOtpValues(newOtp);
+
+    // Auto-focus next input
+    if (value && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, event: React.KeyboardEvent<HTMLInputElement>) => {
+    // Move to previous input on backspace if current is empty
+    if (event.key === "Backspace" && !otpValues[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (event: React.ClipboardEvent<HTMLInputElement>) => {
+    event.preventDefault();
+    const pastedData = event.clipboardData.getData("text/plain").replace(/\D/g, "").slice(0, 6);
+    if (!pastedData) return;
+
+    const newOtp = [...otpValues];
+    for (let i = 0; i < pastedData.length; i++) {
+      newOtp[i] = pastedData[i];
+    }
+    setOtpValues(newOtp);
+
+    // Focus the next empty box or the last box
+    const nextIndex = Math.min(pastedData.length, 5);
+    otpRefs.current[nextIndex]?.focus();
   };
 
   // Safe checks accommodating both API formats ("YES" strings vs boolean true)
@@ -5934,7 +6046,7 @@ const Step6Review: React.FC<Step6Props & { applicationId?: string; autoFill?: Re
         )}
       </div>
 
-      <div className="flex justify-end pt-2">
+      {/* <div className="flex justify-end pt-2">
         <button
           className="gf-btn-primary px-10 py-3 text-[13.5px]"
           disabled={!declared || isSubmittingFinal}
@@ -5950,7 +6062,100 @@ const Step6Review: React.FC<Step6Props & { applicationId?: string; autoFill?: Re
             </>
           )}
         </button>
+      </div> */}
+
+      <div className="flex justify-end pt-2">
+        <button
+          className="gf-btn-primary px-10 py-3 text-[13.5px]"
+          disabled={!declared || isSendingOtp}
+          onClick={handleSendOtp}
+        >
+          {isSendingOtp ? (
+            <><Loader2 size={16} className="gf-spin" /> Sending OTP…</>
+          ) : (
+            <><CheckCircle2 size={16} /> FINAL SUBMIT</>
+          )}
+        </button>
       </div>
+
+
+      {/* ── BEAUTIFUL OTP MODAL ── */}
+      {showOtpModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div 
+            className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl gf-pop relative" 
+            style={{ border: `1.5px solid ${LINE}` }}
+          >
+            {/* Close Button */}
+            <button 
+              onClick={() => setShowOtpModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition-colors"
+              disabled={isSubmittingFinal}
+            >
+              <RotateCcw size={18} />
+            </button>
+
+            <div className="flex flex-col items-center text-center space-y-5">
+              <div 
+                className="w-16 h-16 rounded-full flex items-center justify-center" 
+                style={{ background: "#EEF0F4", color: INK }}
+              >
+                <ShieldCheck size={32} />
+              </div>
+              
+              <div>
+                <div className="text-[18px] font-extrabold" style={{ color: INK }}>
+                  Verify your Identity
+                </div>
+                <div className="text-[12.5px] font-medium leading-relaxed mt-2" style={{ color: INK_SOFT }}>
+                  We've sent a 6-digit code to your registered Email & Mobile Number. Enter it below to submit.
+                </div>
+              </div>
+              
+              {/* OTP Input Boxes */}
+              <div className="flex justify-center gap-2 w-full pt-2">
+                {otpValues.map((digit, idx) => (
+                  <input
+                    key={idx}
+                    ref={(el) => (otpRefs.current[idx] = el)}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleOtpChange(idx, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                    onPaste={handleOtpPaste}
+                    disabled={isSubmittingFinal}
+                    className="w-11 h-12 text-center text-lg font-bold rounded-xl outline-none transition-all"
+                    style={{ 
+                      border: `2px solid ${digit ? TEAL : LINE}`,
+                      background: digit ? "#E8F3EF" : "#F4F5F2",
+                      color: INK
+                    }}
+                  />
+                ))}
+              </div>
+
+              <button
+                onClick={handleFinalSubmit}
+                disabled={isSubmittingFinal || otpValues.join("").length < 6}
+                className="gf-btn-primary w-full mt-4 py-3.5 text-[14px]"
+              >
+                {isSubmittingFinal ? (
+                  <><Loader2 size={16} className="gf-spin" /> Verifying & Submitting...</>
+                ) : (
+                  "Verify & Submit Application"
+                )}
+              </button>
+
+              <div className="text-[11px] font-semibold mt-2" style={{ color: INK_SOFT }}>
+                Didn't receive code? <button onClick={handleSendOtp} disabled={isSendingOtp} className="text-blue-600 underline ml-1 hover:text-blue-800">Resend OTP</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
     </div>
   );
 };
@@ -6314,4 +6519,4 @@ const HeaderBar: React.FC = () => {
   );
 };
 
-export default ApplicationFormContent;
+export default ApplicationFormContent;   
