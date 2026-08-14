@@ -5407,17 +5407,22 @@ const Step6Review: React.FC<Step6Props & { applicationId?: string; autoFill?: Re
       // Trigger OTP API
       const res = await applicationApi.sendFinalSubmitOtp(applicationId);
       
-      // Assume API returns otpRequestId in data
-      const id = res.data?.otpRequestId || res.data?.data?.otpRequestId;
-      if (id) {
-        setOtpRequestId(id);
-        setShowOtpModal(true);
-        // Reset OTP inputs
-        setOtpValues(Array(6).fill(""));
-        setTimeout(() => otpRefs.current[0]?.focus(), 100);
-      } else {
-        throw new Error("Invalid response from server. OTP Request ID missing.");
-      }
+       if (res?.data?.success === true) {
+      setShowOtpModal(true);
+
+      // Reset OTP inputs
+      setOtpValues(Array(6).fill(""));
+
+      // Focus first OTP input
+      setTimeout(() => otpRefs.current[0]?.focus(), 100);
+    } else {
+      const msg =
+        res?.data?.message ||
+        "Failed to send OTP. Please try again.";
+
+      setErr(msg);
+      notifyError(msg);
+    }
     } catch (apiErr: any) {
       const msg = apiErr?.response?.data?.message || apiErr?.message || "Failed to send OTP. Please try again.";
       setErr(msg);
