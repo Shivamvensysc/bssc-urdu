@@ -896,6 +896,60 @@ type DatePart = "day" | "month" | "year";
 //   return obj;
 // };
 
+// const withPreviousApplicationNumber = <T extends Record<string, any>>(
+//   obj: T | undefined | null,
+// ): T => {
+//   if (!obj) return {} as T;
+//   const normalized = { ...obj };
+
+//   if (!normalized.previousApplicationNumber && normalized.oldRegistrationNumber) {
+//     normalized.previousApplicationNumber = normalized.oldRegistrationNumber;
+//   }
+  
+//   // FIX: Map step0 backend fields to step1 frontend state fields
+//   if (!normalized.natureOfDisabilityType && normalized.disTypePersist) {
+//     normalized.natureOfDisabilityType = normalized.disTypePersist;
+//   }
+//   if (!normalized.natureOfDisability && normalized.pwdType) {
+//     normalized.natureOfDisability = normalized.pwdType;
+//   }
+//   if (!normalized.disabilityPercent && normalized.pwd40Percent) {
+//     normalized.disabilityPercent = normalized.pwd40Percent;
+//   }
+
+//   return normalized;
+// };
+
+// const withPreviousApplicationNumber = <T extends Record<string, any>>(
+//   obj: T | undefined | null,
+// ): T => {
+//   if (!obj) return {} as T;
+//   const normalized = { ...obj };
+
+//   if (!normalized.previousApplicationNumber && normalized.oldRegistrationNumber) {
+//     normalized.previousApplicationNumber = normalized.oldRegistrationNumber;
+//   }
+  
+//   // Auto-open Disability Section
+//   if (!normalized.disability && (normalized.isPwD === "YES" || normalized.isPwd === true)) {
+//     normalized.disability = "YES";
+//   }
+
+//   // 🚨 FIX: Map PERMANENT/TEMPORARY to the correct Nature Pill (Not the Dropdown!)
+//   if (!normalized.natureOfDisabilityType && (normalized.disTypePersist || normalized.disabilityType || normalized.pwdType)) {
+//     const t = String(normalized.disTypePersist || normalized.disabilityType || normalized.pwdType).toUpperCase();
+//     if (t === "PERMANENT" || t === "TEMPORARY") {
+//        normalized.natureOfDisabilityType = t;
+//     }
+//   }
+  
+//   if (!normalized.disabilityPercent && (normalized.pwd40Percent === true || normalized.pwd40Percent === "YES")) {
+//     normalized.disabilityPercent = "YES";
+//   }
+
+//   return normalized;
+// };
+
 const withPreviousApplicationNumber = <T extends Record<string, any>>(
   obj: T | undefined | null,
 ): T => {
@@ -906,15 +960,21 @@ const withPreviousApplicationNumber = <T extends Record<string, any>>(
     normalized.previousApplicationNumber = normalized.oldRegistrationNumber;
   }
   
-  // FIX: Map step0 backend fields to step1 frontend state fields
-  if (!normalized.natureOfDisabilityType && normalized.disTypePersist) {
-    normalized.natureOfDisabilityType = normalized.disTypePersist;
+  // Auto-open Disability Section
+  if (!normalized.disability && (normalized.isPwD === "YES" || normalized.isPwd === true)) {
+    normalized.disability = "YES";
   }
-  if (!normalized.natureOfDisability && normalized.pwdType) {
-    normalized.natureOfDisability = normalized.pwdType;
+
+  // 🚨 FIX: Map pwdType to natureOfDisabilityType (PERMANENT/TEMPORARY) Pill!
+  if (!normalized.natureOfDisabilityType && (normalized.disTypePersist || normalized.disabilityType || normalized.pwdType)) {
+    const t = String(normalized.disTypePersist || normalized.disabilityType || normalized.pwdType).toUpperCase();
+    if (t === "PERMANENT" || t === "TEMPORARY") {
+       normalized.natureOfDisabilityType = t;
+    }
   }
-  if (!normalized.disabilityPercent && normalized.pwd40Percent) {
-    normalized.disabilityPercent = normalized.pwd40Percent;
+  
+  if (!normalized.disabilityPercent && (normalized.pwd40Percent === true || normalized.pwd40Percent === "YES")) {
+    normalized.disabilityPercent = "YES";
   }
 
   return normalized;
@@ -980,18 +1040,68 @@ const isAutoFilled = (...keys: string[]): boolean => {
   //   setV((p) => ({ ...p, [`${prefix}${part[0].toUpperCase()}${part.slice(1)}`]: value }));
   // };
 
+  // const setDatePart = (prefix: string, part: DatePart, value: string) => {
+  //   setV((p) => {
+  //     const nextState = { ...p, [`${prefix}${part[0].toUpperCase()}${part.slice(1)}`]: value };
+      
+  //     // Prevent future dates for Domicile Issue Date (and others)
+  //     const day = nextState[`${prefix}Day`] || "";
+  //     const month = nextState[`${prefix}Month`] || "";
+  //     const year = nextState[`${prefix}Year`] || "";
+      
+  //     if (prefix === "domicileIssueDate" && isFutureDate(day, month, year)) {
+  //       notifyError("Future date is not allowed for Domicile Issue Date.");
+  //       return p; // Reject the change, keep previous state
+  //     }
+
+  //     return nextState;
+  //   });
+  // };
+
   const setDatePart = (prefix: string, part: DatePart, value: string) => {
     setV((p) => {
       const nextState = { ...p, [`${prefix}${part[0].toUpperCase()}${part.slice(1)}`]: value };
       
-      // Prevent future dates for Domicile Issue Date (and others)
       const day = nextState[`${prefix}Day`] || "";
       const month = nextState[`${prefix}Month`] || "";
       const year = nextState[`${prefix}Year`] || "";
       
-      if (prefix === "domicileIssueDate" && isFutureDate(day, month, year)) {
-        notifyError("Future date is not allowed for Domicile Issue Date.");
+      // 1. Prevent future dates for Domicile Issue Date
+      // if (prefix === "domicileIssueDate" && isFutureDate(day, month, year)) {
+      //   notifyError("Future date is not allowed for Domicile Issue Date.");
+      //   return p; // Reject the change, keep previous state
+      // }
+      if ((prefix === "domicileIssueDate" || prefix === "debarredFrom" || prefix === "debarredTo") && isFutureDate(day, month, year)) {
+        notifyError("Future date is not allowed.");
         return p; // Reject the change, keep previous state
+      }
+
+      // 2. --- ADDED: ON-CHANGE CHRONOLOGICAL VALIDATION ---
+      // Dynamically detect if we are updating a paired From/To date (Debarred, Contractual, Service)
+      const isFrom = prefix.endsWith("From");
+      const isTo = prefix.endsWith("To");
+
+      if (isFrom || isTo) {
+        const basePrefix = prefix.replace(/(From|To)$/, ""); // extracts "debarred", "contractual", or "service"
+        
+        const fromDay = nextState[`${basePrefix}FromDay`];
+        const fromMonth = nextState[`${basePrefix}FromMonth`];
+        const fromYear = nextState[`${basePrefix}FromYear`];
+        
+        const toDay = nextState[`${basePrefix}ToDay`];
+        const toMonth = nextState[`${basePrefix}ToMonth`];
+        const toYear = nextState[`${basePrefix}ToYear`];
+
+        // If both dates are fully formed, check their chronological order
+        if (isRealDate(fromDay, fromMonth, fromYear) && isRealDate(toDay, toMonth, toYear)) {
+          const fromDate = new Date(toIso(fromDay, fromMonth, fromYear));
+          const toDate = new Date(toIso(toDay, toMonth, toYear));
+
+          if (toDate.getTime() < fromDate.getTime()) {
+            notifyError("'To date' cannot be earlier than 'From date'.");
+            return p; // Reject the dropdown change immediately
+          }
+        }
       }
 
       return nextState;
@@ -1030,6 +1140,51 @@ const isAutoFilled = (...keys: string[]): boolean => {
     year: touched[`${prefix}Year`] ? msg || errors[`${prefix}Year`] : "",
   });
 
+  // ── FIX: Ultra-forgiving string matcher for Disability Dropdown ──
+ // ── FIX: Ultra-forgiving string matcher for Disability Dropdown ──
+  useEffect(() => {
+    if (disabilities.length === 0) return;
+    
+    // 🚨 FIX: ONLY look at natureOfDisability. DO NOT use pwdType here.
+    let rawValue = v.natureOfDisability || autoFill?.natureOfDisability;
+    if (!rawValue) return;
+
+    rawValue = String(rawValue).trim();
+
+    const getOptName = (dis: any) => String(dis.name || dis.label || "").trim();
+    const getOptId = (dis: any) => String(dis.id || dis.value || "").trim();
+    const getOptCode = (dis: any) => String(dis.code || "").trim().toLowerCase();
+    
+    const exactMatch = disabilities.find((d) => getOptName(d) === rawValue);
+    if (exactMatch) {
+      if (v.natureOfDisability !== getOptName(exactMatch)) {
+        setV((p) => ({ ...p, natureOfDisability: getOptName(exactMatch) }));
+      }
+      return; 
+    }
+
+    const idOrCodeMatch = disabilities.find((d) => 
+      getOptId(d) === rawValue || 
+      getOptCode(d) === rawValue.toLowerCase()
+    );
+    if (idOrCodeMatch) {
+      setV((p) => ({ ...p, natureOfDisability: getOptName(idOrCodeMatch) }));
+      return;
+    }
+
+    const clean = (str: string) => String(str).toLowerCase().replace(/[^a-z0-9]/g, '');
+    const targetClean = clean(rawValue);
+
+    const fuzzyMatch = disabilities.find((d) => {
+      const optClean = clean(getOptName(d));
+      return optClean && targetClean && (targetClean.includes(optClean) || optClean.includes(targetClean));
+    });
+
+    if (fuzzyMatch && getOptName(fuzzyMatch) !== v.natureOfDisability) {
+      setV((p) => ({ ...p, natureOfDisability: getOptName(fuzzyMatch) }));
+    }
+  }, [disabilities, v.natureOfDisability, autoFill]);
+  
   useEffect(() => {
     (async () => {
       try {
@@ -1527,7 +1682,18 @@ useEffect(() => {
         e.categoryAuthorityOther = "Please specify the issuing authority";
     }
 
-  
+   //current working  
+    // if (isPwD) {
+    //   if (!v.natureOfDisabilityType) e.natureOfDisabilityType = "Please select nature of disability";
+    //   if (!v.disabilityCertNo) e.disabilityCertNo = "Disability certificate number is required";
+    //   if (!isRealDate(v.disabilityIssueDateDay, v.disabilityIssueDateMonth, v.disabilityIssueDateYear))
+    //     e.disabilityIssueDateDay = "Issue date is required";
+    //   if (!v.disabilityAuthority) e.disabilityAuthority = "Issuing authority is required";
+    //   if (v.disabilityAuthority === "Other" && !v.disabilityAuthorityOther)
+    //     e.disabilityAuthorityOther = "Please specify the issuing authority";
+    //   if (isMin40PwD && !v.isScribeRequired) e.isScribeRequired = "Please specify if scribe is required";
+    // }
+
     if (isPwD) {
       if (!v.natureOfDisabilityType) e.natureOfDisabilityType = "Please select nature of disability";
       if (!v.disabilityCertNo) e.disabilityCertNo = "Disability certificate number is required";
@@ -1536,7 +1702,15 @@ useEffect(() => {
       if (!v.disabilityAuthority) e.disabilityAuthority = "Issuing authority is required";
       if (v.disabilityAuthority === "Other" && !v.disabilityAuthorityOther)
         e.disabilityAuthorityOther = "Please specify the issuing authority";
-      if (isMin40PwD && !v.isScribeRequired) e.isScribeRequired = "Please specify if scribe is required";
+      
+      // Scribe Validation
+      if (isMin40PwD && !v.isScribeRequired) {
+        e.isScribeRequired = "Please specify if scribe is required";
+      }
+      // ADDED: Own Scribe Validation
+      if (isMin40PwD && v.isScribeRequired === "YES" && !v.isownscribe) {
+        e.isownscribe = "Please specify if you want your own scribe";
+      }
     }
 
     if (isExServiceman) {
@@ -1587,14 +1761,42 @@ useEffect(() => {
         e.recruitmentBoard = "Recruitment Board/Commission is required";
       }
       
-      if (
-        !v.debarredFromDay || !v.debarredFromMonth || !v.debarredFromYear ||
-        !v.debarredToDay || !v.debarredToMonth || !v.debarredToYear
-      ) {
-        e.debarredFromDay = "Debarment period (from / to date) is required";
-      }
-      if (!String(v.debarmentReason || "").trim())
+      const hasFromDate = v.debarredFromDay && v.debarredFromMonth && v.debarredFromYear;
+      const hasToDate = v.debarredToDay && v.debarredToMonth && v.debarredToYear;
+
+      // if (!hasFromDate || !hasToDate) {
+      //   e.debarredFromDay = "Debarment period (from / to date) is required";
+      // } else {
+      //   // --- ADDED CHRONOLOGICAL VALIDATION ---
+      //   const fromDate = new Date(toIso(v.debarredFromDay, v.debarredFromMonth, v.debarredFromYear));
+      //   const toDate = new Date(toIso(v.debarredToDay, v.debarredToMonth, v.debarredToYear));
+
+      //   if (toDate.getTime() < fromDate.getTime()) {
+      //     e.debarredToDay = "'To date' cannot be earlier than 'From date'";
+      //   }
+      // }
+
+      if (!hasFromDate || !hasToDate) {
+            e.debarredFromDay = "Debarment period (from / to date) is required";
+          } else {
+            // --- ADDED CHRONOLOGICAL VALIDATION ---
+            const fromDate = new Date(toIso(v.debarredFromDay, v.debarredFromMonth, v.debarredFromYear));
+            const toDate = new Date(toIso(v.debarredToDay, v.debarredToMonth, v.debarredToYear));
+
+            if (toDate.getTime() < fromDate.getTime()) {
+              e.debarredToDay = "'To date' cannot be earlier than 'From date'";
+            }
+            if (isFutureDate(v.debarredFromDay, v.debarredFromMonth, v.debarredFromYear)) {
+              e.debarredFromDay = "From date cannot be in the future";
+            }
+            if (isFutureDate(v.debarredToDay, v.debarredToMonth, v.debarredToYear)) {
+              e.debarredToDay = "To date cannot be in the future";
+            }
+          }
+
+      if (!String(v.debarmentReason || "").trim()) {
         e.debarmentReason = "Reason for debarment is required";
+      }
     }
 
     if (v.emailId && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.emailId)) e.emailId = "Enter a valid email";
@@ -1657,6 +1859,13 @@ useEffect(() => {
     const payload: Step1Data = {
        fullName: applicantName,  // Changed from applicantName to fullName
     ...rest,
+    hasAadharCard: v.hasAadharCard,
+    isownscribe: v.isScribeRequired === "YES" ? v.isownscribe : "", // <-- ADDED THIS
+      aadharCardNumber: v.hasAadharCard === "YES" ? v.aadharCardNumber : "",
+      typeOfPhotoIdProof: v.hasAadharCard === "NO" ? v.typeOfPhotoIdProof : "",
+      idProofNo: v.hasAadharCard === "NO" ? v.idProofNo : "",
+      governmentIdNumber: v.hasAadharCard === "NO" ? v.governmentIdNumber : "",
+      
       dateOfBirth: toIso(v.dobDay, v.dobMonth, v.dobYear),
       oldRegistrationNumber: previousApplicationNumber,
       domicileCertificateIssueDate: isBiharDomicile ? toIso(v.domicileIssueDateDay, v.domicileIssueDateMonth, v.domicileIssueDateYear) : null,
@@ -1670,6 +1879,18 @@ useEffect(() => {
       debarredToDate: toIso(v.debarredToDay, v.debarredToMonth, v.debarredToYear),
       ageEligibility,
     };
+
+    // 🚀 CONSOLE LOG ADDED HERE TO VERIFY ID PROOF VALUES
+    console.log("========== STEP 1 PAYLOAD DEBUG ==========");
+    console.log("1. ID PROOF DATA:", {
+      hasAadharCard: payload.hasAadharCard,
+      aadharCardNumber: payload.aadharCardNumber,
+      typeOfPhotoIdProof: payload.typeOfPhotoIdProof,
+      idProofNo: payload.idProofNo,
+      governmentIdNumber: payload.governmentIdNumber,
+    });
+    console.log("2. FULL PAYLOAD:", payload);
+    
 
     try {
       setIsSavingStep1(true);
@@ -1748,7 +1969,9 @@ useEffect(() => {
               onChange={handleNationalityChange}
               disabled={countriesLoading}
             >
-              <option value="">{countriesLoading ? "Loading..." : "Select nationality"}</option>
+            <option value="" disabled hidden>
+                {countriesLoading ? "Loading..." : "Select nationality"}
+              </option>
               {countries.map((c) => (
                 <option key={c.countryId} value={c.countryName}>
                   {c.countryName}
@@ -1960,7 +2183,7 @@ useEffect(() => {
                   error={errors.domicileCertificateAuthority}
                   disabled={isAutoFilled("domicileCertificateAuthority")}
                 >
-                  <option value="">Select authority</option>
+                  <option value="" disabled hidden >Select authority</option>
                   {CATEGORY_AUTHORITY_OPTIONS.map((o) => (
                     <option key={o} value={o}>{o}</option>
                   ))}
@@ -2093,7 +2316,7 @@ useEffect(() => {
                     error={errors.categoryAuthority}
                     disabled={isAutoFilled("categoryAuthority")}
                   >
-                    <option value="">Select authority</option>
+                    <option value="" disabled hidden >Select authority</option>
                     {CATEGORY_AUTHORITY_OPTIONS.map((o) => (
                       <option key={o} value={o}>{o}</option>
                     ))}
@@ -2216,21 +2439,31 @@ useEffect(() => {
           {/* This wrapper ensures these 3 fields ONLY show if Person with Disability is YES */}
           {isPwD && (
             <>
-              <Field label="Type of disability" hi="दिव्यांगता का प्रकार" note={disabilitiesLoading ? "Loading disabilities..." : undefined}>
+             <Field 
+                label="Type of disability" 
+                hi="दिव्यांगता का प्रकार" 
+                note={disabilitiesLoading ? "Loading disabilities..." : undefined}
+              >
                 <SelectBox
                   name="natureOfDisability"
                   value={v.natureOfDisability || ""}
                   onChange={(e: ChangeEvent<HTMLSelectElement>) => setField("natureOfDisability", e.target.value)}
-                  disabled={disabilitiesLoading || isAutoFilled("natureOfDisability", "pwdType")}
+                
+                  disabled={disabilitiesLoading || isAutoFilled("natureOfDisability")}
                 >
                   <option value="">{disabilitiesLoading ? "Loading..." : "Select disability type"}</option>
-                  {disabilities.map((dis) => (
-                    <option key={dis.id} value={dis.name}>{dis.name}</option>
-                  ))}
+                  {disabilities.map((dis: any) => {
+                    const optionName = String(dis.name || dis.label || "").trim();
+                    return (
+                      <option key={dis.id || dis.code || optionName} value={optionName}>
+                        {optionName}
+                      </option>
+                    );
+                  })}
                 </SelectBox>
               </Field>
 
-              <Field
+             <Field
                 label="Nature of disability?"
                 hi="दिव्यांगता की प्रकृति"
                 required={isPwD}
@@ -2241,7 +2474,8 @@ useEffect(() => {
                   value={v.natureOfDisabilityType || ""}
                   onChange={(val) => setField("natureOfDisabilityType", val)}
                   options={["PERMANENT", "TEMPORARY"]}
-                  disabled={isAutoFilled("natureOfDisabilityType", "disTypePersist")}
+                
+                  disabled={isAutoFilled("natureOfDisabilityType", "disTypePersist", "pwdType")}
                 />
               </Field>
 
@@ -2263,7 +2497,7 @@ useEffect(() => {
           )}
 
           {/* Scribe field only shows if Minimum 40% is YES */}
-          {isMin40PwD && (
+          {/* {isMin40PwD && (
             <Field label="Is scribe required?" hi="क्या लेखक (स्क्राइब) की आवश्यकता है?" required error={errors.isScribeRequired}>
               <PillGroup
                 name="isScribeRequired"
@@ -2273,6 +2507,45 @@ useEffect(() => {
                 disabled={isAutoFilled("isScribeRequired", "scribeRequired", "isScribe", "isownscribe")}
               />
             </Field>
+          )} */}
+
+          {/* Scribe field only shows if Minimum 40% is YES */}
+          {isMin40PwD && (
+            <>
+              <Field label="Is scribe required?" hi="क्या लेखक (स्क्राइब) की आवश्यकता है?" required error={errors.isScribeRequired}>
+                <PillGroup
+                  name="isScribeRequired"
+                  value={v.isScribeRequired || ""}
+                  onChange={(val) => {
+                    setField("isScribeRequired", val);
+                    // Clear the own scribe answer if they switch Scribe Required to NO
+                    if (val === "NO") {
+                      setField("isownscribe", "");
+                    }
+                  }}
+                  options={YES_NO}
+                  disabled={isAutoFilled("isScribeRequired", "scribeRequired", "isScribe")}
+                />
+              </Field>
+
+              {v.isScribeRequired === "YES" && (
+                <Field 
+                  label="Do you want your own scribe?" 
+                  hi="क्या आप अपना स्वयं का श्रुतिलेखक (स्क्राइब) चाहते हैं?" 
+                  required 
+                  error={errors.isownscribe}
+                >
+                  <PillGroup
+                    name="isownscribe"
+                    value={v.isownscribe || ""}
+                    onChange={(val) => setField("isownscribe", val)}
+                    options={YES_NO}
+                    // Securely locks it if the autofill data mapped it from Step 0
+                    disabled={isAutoFilled("isownscribe", "ownScribeRequired")}
+                  />
+                </Field>
+              )}
+            </>
           )}
         </div>
 
@@ -2301,7 +2574,7 @@ useEffect(() => {
                     disabled={isAutoFilled("disabilityAuthority", "pwdCertificateAuthority", "pwdAuthority")}
                   
                   >
-                    <option value="">Select authority</option>
+                    <option value="" disabled hidden >Select authority</option>
                     {DISABILITY_AUTHORITY_OPTIONS.map((o) => (
                       <option key={o} value={o}>{o}</option>
                     ))}
@@ -2570,7 +2843,24 @@ useEffect(() => {
             <PillGroup
               name="isDebarred"
               value={v.isDebarred || ""}
-              onChange={(val) => setField("isDebarred", val)}
+              // onChange={(val) => setField("isDebarred", val)}
+              onChange={(val) => {
+                setField("isDebarred", val);
+                // Clear all debarment details from state if user switches to "NO"
+                if (val === "NO") {
+                  setV((p) => ({
+                    ...p,
+                    recruitmentBoard: "",
+                    debarredFromDay: "",
+                    debarredFromMonth: "",
+                    debarredFromYear: "",
+                    debarredToDay: "",
+                    debarredToMonth: "",
+                    debarredToYear: "",
+                    debarmentReason: "",
+                  }));
+                }
+              }}
               options={YES_NO}
             />
           </Field>
@@ -2660,14 +2950,20 @@ useEffect(() => {
               name="hasAadharCard"
               value={v.hasAadharCard || ""}
               onChange={(val) => {
-                setField("hasAadharCard", val);
-                // Clear the other ID fields if Aadhar is selected
+                // Clear state based on what they selected
                 if (val === "YES") {
                   setV((p) => ({
                     ...p,
+                    hasAadharCard: val,
                     typeOfPhotoIdProof: "",
                     idProofNo: "",
                     governmentIdNumber: "",
+                  }));
+                } else {
+                  setV((p) => ({
+                    ...p,
+                    hasAadharCard: val,
+                    aadharCardNumber: "", // <-- This clears the Aadhar number if they switch to NO
                   }));
                 }
               }}
@@ -4492,14 +4788,10 @@ const Step3Education: React.FC<Step3Props & { applicationId?: string }> = ({
 --------------------------------------------------------------- */
 const Step4PhotoUpload: React.FC<Step4Props & { 
   applicationId?: string; 
-  isContractual?: boolean; 
-  hasAgreement?: boolean; 
 }> = ({
   data,
   onSave,
   applicationId,
-  isContractual,
-  hasAgreement,
 }) => {
   // Store base64 for preview
   const [v, setV] = useState<PhotoData & { [key: string]: any }>({ ...data });
@@ -4546,37 +4838,10 @@ const Step4PhotoUpload: React.FC<Step4Props & {
   ];
 
   // Dynamically add PDF requirements based on Step 1 selections
-  const uploads = [...baseUploads];
+  const uploads = baseUploads;
   
-  if (isContractual) {
-    uploads.push({
-      field: "experienceCertificate",
-      label: "Upload Experience Certificate (PDF format)",
-      hi: "अनुभव प्रमाणपत्र अपलोड करें (PDF प्रारूप)",
-      spec: "PDF Document · Up to 2MB",
-      maxKB: 2048,
-      height: 120, // UI box height
-      minWidth: 0, // Not applicable for PDF
-      minHeight: 0, // Not applicable for PDF
-      isPdf: true,
-      accept: "application/pdf"
-    });
-  }
   
-  if (hasAgreement) {
-    uploads.push({
-      field: "agreementCopy",
-      label: "Upload Agreement Copy (PDF format)",
-      hi: "एकरारनामा की प्रति अपलोड करें (PDF प्रारूप)",
-      spec: "PDF Document · Up to 2MB",
-      maxKB: 2048,
-      height: 120,
-      minWidth: 0,
-      minHeight: 0,
-      isPdf: true,
-      accept: "application/pdf"
-    });
-  }
+  
 
   // Unified handler for both Images and PDFs
   const handleFile = (field: string, file: File, maxKB: number, minWidth?: number, minHeight?: number, isPdf?: boolean) => {
@@ -5343,6 +5608,29 @@ const Step6Review: React.FC<Step6Props & { applicationId?: string; autoFill?: Re
   const [otpRequestId, setOtpRequestId] = useState("");
   const [otpValues, setOtpValues] = useState<string[]>(Array(6).fill(""));
   const otpRefs = useRef<(HTMLInputElement | null)[]>(Array(6).fill(null));
+
+  // --- NEW TIMER STATE ---
+  const [otpTimer, setOtpTimer] = useState<number>(120); // 120 seconds = 2 mins
+  const [isTimerActive, setIsTimerActive] = useState<boolean>(false);
+
+  // --- TIMER LOGIC ---
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isTimerActive && otpTimer > 0) {
+      interval = setInterval(() => {
+        setOtpTimer((prev) => prev - 1);
+      }, 1000);
+    } else if (otpTimer === 0) {
+      setIsTimerActive(false);
+    }
+    return () => clearInterval(interval);
+  }, [isTimerActive, otpTimer]);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, "0");
+    const s = (seconds % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  };
   
   // Merge step0 (autoFill) and step1 (formData.personal) to get the complete picture
   const p: any = { ...autoFill, ...(formData.personal || {}) };
@@ -5412,6 +5700,8 @@ const Step6Review: React.FC<Step6Props & { applicationId?: string; autoFill?: Re
 
       // Reset OTP inputs
       setOtpValues(Array(6).fill(""));
+      setOtpTimer(120); // Set to 2 minutes
+        setIsTimerActive(true);
 
       // Focus first OTP input
       setTimeout(() => otpRefs.current[0]?.focus(), 100);
@@ -5505,10 +5795,57 @@ const Step6Review: React.FC<Step6Props & { applicationId?: string; autoFill?: Re
   const isSportsQuota = p.isSportsQuota === "YES" || p.isSportsQuota === true;
 
   // Format dates cleanly regardless of format (ISO vs DD-MM-YYYY)
+ 
+  
+
+  // Format dates cleanly to Indian Format (DD-MM-YYYY) for Review Step
   const formatDate = (dateString?: string) => {
     if (!dateString) return "";
-    if (dateString.includes("T")) return dateString.split("T")[0]; // Handles ISO
-    return dateString;
+    
+    // Extract just the date part if it contains a timestamp
+    let datePart = dateString.includes("T") ? dateString.split("T")[0] : dateString;
+    
+    // Check if the date is in YYYY-MM-DD format
+    const isoRegex = /^(\d{4})-(\d{2})-(\d{2})$/;
+    const match = datePart.match(isoRegex);
+    
+    if (match) {
+      // Rearrange to DD-MM-YYYY
+      return `${match[3]}-${match[2]}-${match[1]}`;
+    }
+    
+    // Fallback if it's already DD-MM-YYYY or an unknown format
+    return datePart;
+  };
+
+  // ✅ ADD THIS NEW HELPER FUNCTION HERE
+  const getFormattedDuration = (fromDate?: string, toDate?: string) => {
+    if (!fromDate || !toDate) return "";
+    
+    // 1. Extract date part just in case it has timestamp
+    const fromStr = fromDate.includes("T") ? fromDate.split("T")[0] : fromDate;
+    const toStr = toDate.includes("T") ? toDate.split("T")[0] : toDate;
+    
+    // 2. Ensure YYYY-MM-DD format for calcDuration
+    const ensureIso = (d: string) => {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+      const match = d.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+      if (match) return `${match[3]}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}`;
+      return d;
+    };
+
+    try {
+      const duration = calcDuration(ensureIso(fromStr), ensureIso(toStr));
+      if (!duration) return "";
+      
+      const y = `${duration.years} year${duration.years !== 1 ? 's' : ''}`;
+      const m = `${duration.months} month${duration.months !== 1 ? 's' : ''}`;
+      const d = `${duration.days} day${duration.days !== 1 ? 's' : ''}`;
+      
+      return `${y} ${m} ${d}`;
+    } catch (error) {
+      return "";
+    }
   };
 
   return (
@@ -5597,8 +5934,17 @@ const Step6Review: React.FC<Step6Props & { applicationId?: string; autoFill?: Re
                   <ReviewRow label="Type of disability" hi="दिव्यांगता का प्रकार" value={p.natureOfDisability || p.pwdType} />
                   <ReviewRow label="Nature of disability?" hi="दिव्यांगता की प्रकृति" value={p.natureOfDisabilityType || p.disTypePersist} />
                   <ReviewRow label="Minimum 40% disability?" hi="न्यूनतम 40% दिव्यांगता?" value={isMin40PwD ? "YES" : "NO"} />
-                  {isMin40PwD && (
+                  {/* {isMin40PwD && (
                     <ReviewRow label="Is scribe required?" hi="क्या लेखक (स्क्राइब) की आवश्यकता है?" value={p.isScribeRequired || p.isownscribe} />
+                  )} */}
+
+                  {isMin40PwD && (
+                    <>
+                      <ReviewRow label="Is scribe required?" hi="क्या लेखक (स्क्राइब) की आवश्यकता है?" value={p.isScribeRequired} />
+                      {(p.isScribeRequired === "YES" || p.isScribeRequired === true) && (
+                        <ReviewRow label="Do you want your own scribe?" hi="क्या आप अपना स्वयं का श्रुतिलेखक (स्क्राइब) चाहते हैं?" value={p.isownscribe || p.ownScribeRequired} />
+                      )}
+                    </>
                   )}
                   <ReviewRow label="Disability certificate number" hi="प्रमाणपत्र संख्या" value={p.disabilityCertNo || p.pwdCertificateNumber} />
                   <ReviewRow label="Disability — issue date" hi="जारी करने की तिथि" value={formatDate(p.disabilityIssueDate || p.pwdCertificateIssueDate)} />
@@ -5615,7 +5961,13 @@ const Step6Review: React.FC<Step6Props & { applicationId?: string; autoFill?: Re
                 <>
                   <ReviewRow label="Service in defence — from date" hi="रक्षा में सेवा — दिनांक से" value={formatDate(p.serviceFromDate)} />
                   <ReviewRow label="Service in defence — to date" hi="रक्षा में सेवा — दिनांक तक" value={formatDate(p.serviceToDate)} />
-                  <ReviewRow label="Service Duration" hi="सेवा अवधि" value={p.servicePeriod} />
+                  {/* <ReviewRow label="Service Duration" hi="सेवा अवधि" value={p.servicePeriod} /> */} 
+                  {/* <ReviewRow label="Service Duration" hi="सेवा अवधि" value={p.serviceFromDate && p.serviceToDate ? `${formatDate(p.serviceFromDate)} to ${formatDate(p.serviceToDate)}` : ""} /> */}
+                  <ReviewRow 
+    label="Service Duration" 
+    hi="सेवा अवधि" 
+    value={getFormattedDuration(p.serviceFromDate, p.serviceToDate)} 
+  />
                 </>
               )}
               
@@ -5644,7 +5996,13 @@ const Step6Review: React.FC<Step6Props & { applicationId?: string; autoFill?: Re
                   <ReviewRow label="Agreement under circular 1003?" hi="संकल्प 1003 के अनुसार एकरारनामा?" value={p.agreementCircular || p.hasAgreement} />
                   <ReviewRow label="Contractual service — from date" hi="संविदा सेवा अवधि — दिनांक से" value={formatDate(p.contractualFromDate)} />
                   <ReviewRow label="Contractual service — to date" hi="संविदा सेवा अवधि — दिनांक तक" value={formatDate(p.contractualToDate)} />
-                  <ReviewRow label="Contractual Duration" hi="संविदा सेवा अवधि" value={p.contractualPeriod} />
+                  {/* <ReviewRow label="Contractual Duration" hi="संविदा सेवा अवधि" value={p.contractualPeriod} /> */}
+                  {/* <ReviewRow label="Contractual Duration" hi="संविदा सेवा अवधि" value={p.contractualFromDate && p.contractualToDate ? `${formatDate(p.contractualFromDate)} to ${formatDate(p.contractualToDate)}` : ""} /> */}
+                  <ReviewRow 
+    label="Contractual Duration" 
+    hi="संविदा सेवा अवधि" 
+    value={getFormattedDuration(p.contractualFromDate, p.contractualToDate)} 
+  />
                 </>
               )}
               
@@ -6153,8 +6511,21 @@ const Step6Review: React.FC<Step6Props & { applicationId?: string; autoFill?: Re
                 )}
               </button>
 
-              <div className="text-[11px] font-semibold mt-2" style={{ color: INK_SOFT }}>
-                Didn't receive code? <button onClick={handleSendOtp} disabled={isSendingOtp} className="text-blue-600 underline ml-1 hover:text-blue-800">Resend OTP</button>
+             <div className="text-[11px] font-semibold mt-2" style={{ color: INK_SOFT }}>
+                Didn't receive code?{" "}
+                {isTimerActive ? (
+                  <span style={{ color: INK_SOFT, marginLeft: "4px" }}>
+                    Resend OTP in <span className="font-bold" style={{ color: TEAL }}>{formatTime(otpTimer)}</span>
+                  </span>
+                ) : (
+                  <button 
+                    onClick={handleSendOtp} 
+                    disabled={isSendingOtp} 
+                    className="text-blue-600 underline ml-1 hover:text-blue-800 disabled:opacity-50"
+                  >
+                    Resend OTP
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -6199,17 +6570,7 @@ const ApplicationFormContent: React.FC = () => {
           setApplicationId(payload.applicationId || "");
           setCandidateId(payload.candidateId || "");
 
-          // Auto-fill Step 1 from the step0 registration snapshot — jo
-          // value step0 me hai wo prefill ho jaayegi, baaki empty rahegi.
-          // setStep1AutoFill(mapStep0ToStep1(payload.steps?.step0)); // this is current working code 
-          // const step0AutoFill = mapStep0ToStep1(payload.steps?.step0);
-          
-          // // Fallback: If step0 doesn't have a caste, take it from candidateDetails
-          // if (!step0AutoFill.caste && payload.candidateDetails?.caste) {
-          //   step0AutoFill.caste = payload.candidateDetails.caste;
-          // }
-          
-          // setStep1AutoFill(step0AutoFill);
+        
 
           const rawStep0 = payload.steps?.step0 || {};
           const step0AutoFill = mapStep0ToStep1(rawStep0);
@@ -6218,9 +6579,36 @@ const ApplicationFormContent: React.FC = () => {
           if (!step0AutoFill.caste && payload.candidateDetails?.caste) {
             step0AutoFill.caste = payload.candidateDetails.caste;
           }
+
+       
+          
           
           // 🚨 CRITICAL FIX: Merge rawStep0 so no keys are lost by the mapper!
-          setStep1AutoFill({ ...rawStep0, ...step0AutoFill });
+          // setStep1AutoFill({ ...rawStep0, ...cleanStep0AutoFill });
+
+            setStep1AutoFill({
+  ...rawStep0,
+  ...step0AutoFill,
+  // 🔧 mapStep0ToStep1 doesn't know about PWD fields — never let it
+  // silently blank these out. Always prefer the raw step0 values.
+  natureOfDisability: rawStep0.natureOfDisability || step0AutoFill.natureOfDisability || "",
+  natureOfDisabilityType:
+    rawStep0.natureOfDisabilityType ||
+    rawStep0.disTypePersist ||
+    step0AutoFill.natureOfDisabilityType ||
+    "",
+  disabilityPercent:
+    rawStep0.pwd40Percent === true || rawStep0.pwd40Percent === "YES"
+      ? "YES"
+      : step0AutoFill.disabilityPercent || "",
+  disability:
+    rawStep0.isPwD === "YES" || rawStep0.isPwd === true
+      ? "YES"
+      : step0AutoFill.disability || "",
+});
+
+console.log('rawStep0.natureOfDisability:', rawStep0.natureOfDisability);
+console.log('step0AutoFill.natureOfDisability:', step0AutoFill.natureOfDisability);
 
           // If step1 (or later) was already saved earlier, resume from
           // it instead of leaving formData empty, so re-opening the
@@ -6451,18 +6839,6 @@ const ApplicationFormContent: React.FC = () => {
                     data={formData.photos}
                     onSave={(d: PhotoData) => saveStep(4, d, "photos")}
                     applicationId={applicationId}
-                    // isContractual={formData.personal.contractualEmployee === "YES"}
-                    // hasAgreement={formData.personal.agreementCircular === "YES"}
-                    isContractual={
-                      formData.personal?.contractualEmployee === "YES" || 
-                      step1AutoFill?.contractualEmployee === "YES" || 
-                      step1AutoFill?.contractualEmp === "YES"
-                    }
-                    hasAgreement={
-                      formData.personal?.agreementCircular === "YES" || 
-                      step1AutoFill?.agreementCircular === "YES" || 
-                      step1AutoFill?.hasAgreement === "YES"
-                    }
                   />
                 )}
                 {currentStep === 5 && (

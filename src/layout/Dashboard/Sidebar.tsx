@@ -130,8 +130,26 @@ export default function Sidebar({
 }: SidebarProps) {
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    navigate("/");
+ const handleLogout = () => {
+    const idToken = localStorage.getItem("idToken");
+
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("idToken");
+    localStorage.removeItem("refreshToken");
+
+    const domain = import.meta.env.VITE_ZITADEL_DOMAIN;
+    const clientId = import.meta.env.VITE_ZITADEL_CLIENT_ID; // <-- Get Client ID
+    const postLogoutUri = import.meta.env.VITE_ZITADEL_POST_LOGOUT_REDIRECT_URI;
+
+    if (domain && idToken && postLogoutUri) {
+      // <-- Added client_id to the URL parameters
+      const logoutUrl = `https://${domain}/oidc/v1/end_session?client_id=${clientId}&id_token_hint=${idToken}&post_logout_redirect_uri=${encodeURIComponent(postLogoutUri)}`;
+      
+      console.log("SENDING LOGOUT URL:", logoutUrl); // Check this in your browser console!
+      window.location.href = logoutUrl; 
+    } else {
+      navigate("/"); 
+    }
   };
 
   // Filter main nav dynamically based on isSubmitted status

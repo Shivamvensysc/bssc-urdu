@@ -2113,6 +2113,7 @@ const handleContractualToDateBlur = (field: "day" | "month" | "year") => {
       agreementCopyName,
       agreementCopyBase64,
       agreementCopyFile,
+      hasUrduInIntermediate,
       ...apiData // <-- This now contains everything EXCEPT the 6 file keys above
     } = d as any;
 
@@ -2144,6 +2145,7 @@ const handleContractualToDateBlur = (field: "day" | "month" | "year") => {
         
     return {
       ...apiData,
+      declaration: hasUrduInIntermediate === "YES",
       serviceFromDate: serviceFromISO,
       serviceToDate: serviceToISO,
       contractualFromDate: contractualFromISO,

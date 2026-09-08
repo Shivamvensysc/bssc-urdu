@@ -210,6 +210,10 @@ interface Step0Data {
   domicileCertificateNumber?: string | null;
   domicileCertificateAuthority?: string | null;
   domicileCertificateIssueDate?: string | null;
+
+  ownScribeRequired?: string;
+  isownscribe?: string;
+  isOwnScribe?: string | boolean;
 }
 
 interface Step1Data {
@@ -298,6 +302,24 @@ interface Step1Data {
   ageEligibility: AgeEligibility;
   mainCategoryName: string;
   subCategoryName: string;
+
+  // Add these missing fields
+  serviceFromDay?: string;
+  serviceFromMonth?: string;
+  serviceFromYear?: string;
+  serviceToDay?: string;
+  serviceToMonth?: string;
+  serviceToYear?: string;
+  contractualFromDay?: string;
+  contractualFromMonth?: string;
+  contractualFromYear?: string;
+  contractualToDay?: string;
+  contractualToMonth?: string;
+  contractualToYear?: string;
+
+  ownScribeRequired?: string;
+  isownscribe?: string;
+  isOwnScribe?: string | boolean;
 }
 
 /**
@@ -791,13 +813,41 @@ function Step1DetailsPanel({ data }: { data: Step1PersonalData }) {
     return val;
   };
 
-  const renderStatusBadge = (val: string) => {
-    if (!val) return "—";
-    const upper = val.toUpperCase();
-    if (upper === "YES" || upper === "COMPLETED" || upper === "PAID") {
+  const renderSplitDate = (fullDate: unknown, day: unknown, month: unknown, year: unknown): string => {
+    // If the main date field is valid, use it
+    if (fullDate && typeof fullDate === "string" && fullDate.trim() !== "") {
+      return fullDate;
+    }
+    // Otherwise construct the date from day/month/year components
+    if (day && month && year) {
+      const pad = (n: unknown) => String(n).padStart(2, '0');
+      return `${pad(day)}-${pad(month)}-${year}`;
+    }
+    return "—";
+  };
+
+  // const renderStatusBadge = (val: string) => {
+  //   if (!val) return "—";
+  //   const upper = val.toUpperCase();
+  //   if (upper === "YES" || upper === "COMPLETED" || upper === "PAID") {
+  //     return <Badge tone="success">Yes</Badge>;
+  //   }
+  //   if (upper === "NO" || upper === "PENDING") {
+  //     return <Badge tone="warning">No</Badge>;
+  //   }
+  //   return renderValue(val);
+  // };
+
+  const renderStatusBadge = (val: unknown) => {
+    if (val === null || val === undefined || val === "") return "—";
+    
+    // Safely convert to string and uppercase to handle booleans (true/false) and strings
+    const upper = String(val).toUpperCase();
+    
+    if (upper === "YES" || upper === "TRUE" || upper === "COMPLETED" || upper === "PAID") {
       return <Badge tone="success">Yes</Badge>;
     }
-    if (upper === "NO" || upper === "PENDING") {
+    if (upper === "NO" || upper === "FALSE" || upper === "PENDING") {
       return <Badge tone="warning">No</Badge>;
     }
     return renderValue(val);
@@ -873,7 +923,10 @@ function Step1DetailsPanel({ data }: { data: Step1PersonalData }) {
             </div>
             <div>
               <p className="text-[11px] text-[var(--ink-soft)]">Date of Birth / जन्म तिथि</p>
-              <p className="text-sm font-medium text-[var(--ink)]">{renderValue(data.dateOfBirth)}</p>
+              <p className="text-sm font-medium text-[var(--ink)]">
+                {/* ✅ UPDATED: Use your existing renderSplitDate helper */}
+                {renderSplitDate(data.dateOfBirth, data.dobDay, data.dobMonth, data.dobYear)}
+              </p>
             </div>
             <div>
               <p className="text-[11px] text-[var(--ink-soft)]">Marital Status / वैवाहिक स्थिति</p>
@@ -1069,12 +1122,19 @@ function Step1DetailsPanel({ data }: { data: Step1PersonalData }) {
                   <p className="text-[11px] text-[var(--ink-soft)]">Scribe Required / लेखक आवश्यक</p>
                   {renderStatusBadge(data.isScribeRequired)}
                 </div>
+                {(data.isScribeRequired === "YES" || data.isScribeRequired === true) && (
+                  <div>
+                    <p className="text-[11px] text-[var(--ink-soft)]">Own Scribe / स्वयं का लेखक</p>
+                    {renderStatusBadge(data.ownScribeRequired || data.isownscribe || data.isOwnScribe)}
+                  </div>
+                )}
               </>
             )}
           </div>
         </div>
 
         {/* ── Ex-Serviceman Details ── */}
+       {/* ── Ex-Serviceman Details ── */}
         <div>
           <h4 className="text-sm font-bold text-[var(--ink)] flex items-center gap-2 mb-3 pb-2 border-b border-[var(--line)]">
             <Award size={15} className="text-[var(--ochre-deep)]" />
@@ -1087,15 +1147,17 @@ function Step1DetailsPanel({ data }: { data: Step1PersonalData }) {
             </div>
             {data.exServiceman === "YES" && (
               <>
-               
-               
                 <div>
                   <p className="text-[11px] text-[var(--ink-soft)]">Service From / सेवा प्रारंभ</p>
-                  <p className="text-sm font-medium text-[var(--ink)]">{renderValue(data.serviceFromDate)}</p>
+                  <p className="text-sm font-medium text-[var(--ink)]">
+                    {renderSplitDate(data.serviceFromDate, data.serviceFromDay, data.serviceFromMonth, data.serviceFromYear)}
+                  </p>
                 </div>
                 <div>
                   <p className="text-[11px] text-[var(--ink-soft)]">Service To / सेवा समाप्त</p>
-                  <p className="text-sm font-medium text-[var(--ink)]">{renderValue(data.serviceToDate)}</p>
+                  <p className="text-sm font-medium text-[var(--ink)]">
+                    {renderSplitDate(data.serviceToDate, data.serviceToDay, data.serviceToMonth, data.serviceToYear)}
+                  </p>
                 </div>
               </>
             )}
@@ -1139,18 +1201,8 @@ function Step1DetailsPanel({ data }: { data: Step1PersonalData }) {
               <p className="text-[11px] text-[var(--ink-soft)]">Bihar Govt Employee / बिहार सरकार कर्मचारी</p>
               {renderStatusBadge(data.biharGovtEmployee)}
             </div>
-            {data.biharGovtEmployee === "YES" && (
-              <>
-                <div>
-                  <p className="text-[11px] text-[var(--ink-soft)]">Department Name / विभाग का नाम</p>
-                  <p className="text-sm font-medium text-[var(--ink)]">{renderValue(data.departmentName)}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] text-[var(--ink-soft)]">Office Order No / कार्यालय आदेश संख्या</p>
-                  <p className="text-sm font-medium text-[var(--ink)]">{renderValue(data.officeOrderNo)}</p>
-                </div>
-              </>
-            )}
+            
+            
           </div>
         </div>
 
@@ -1183,13 +1235,17 @@ function Step1DetailsPanel({ data }: { data: Step1PersonalData }) {
                   <p className="text-[11px] text-[var(--ink-soft)]">Agreement Circular / समझौता परिपत्र</p>
                   {renderStatusBadge(data.agreementCircular)}
                 </div>
-                <div>
+               <div>
                   <p className="text-[11px] text-[var(--ink-soft)]">Contract From / अनुबंध प्रारंभ</p>
-                  <p className="text-sm font-medium text-[var(--ink)]">{renderValue(data.contractualFromDate)}</p>
+                  <p className="text-sm font-medium text-[var(--ink)]">
+                    {renderSplitDate(data.contractualFromDate, data.contractualFromDay, data.contractualFromMonth, data.contractualFromYear)}
+                  </p>
                 </div>
                 <div>
                   <p className="text-[11px] text-[var(--ink-soft)]">Contract To / अनुबंध समाप्त</p>
-                  <p className="text-sm font-medium text-[var(--ink)]">{renderValue(data.contractualToDate)}</p>
+                  <p className="text-sm font-medium text-[var(--ink)]">
+                    {renderSplitDate(data.contractualToDate, data.contractualToDay, data.contractualToMonth, data.contractualToYear)}
+                  </p>
                 </div>
               </>
             )}
@@ -1630,6 +1686,20 @@ export default function DashboardContent() {
     const step1 = apiData.steps.step1;
     const step2 = apiData.steps.step2;
     const candidate = apiData.candidateDetails;
+    // ✅ ADDED: Helper to stitch the date together if dateOfBirth is null
+    const buildDob = () => {
+      if (step1?.dateOfBirth) return step1.dateOfBirth;
+      if (step0?.dateOfBirth) return step0.dateOfBirth;
+      
+      const day = step1?.dobDay || step0?.dobDay;
+      const month = step1?.dobMonth || step0?.dobMonth;
+      const year = step1?.dobYear || step0?.dobYear;
+      
+      if (day && month && year) {
+        return `${String(day).padStart(2, '0')}-${String(month).padStart(2, '0')}-${year}`;
+      }
+      return "N/A";
+    };
     
     return {
       registrationNo: candidate.registrationNumber || "N/A",
@@ -1638,7 +1708,8 @@ export default function DashboardContent() {
       fatherName: step1?.fatherName || step0?.fatherName || "N/A",
       motherName: step1?.motherName || step0?.motherName || "N/A",
       gender: step1?.gender || step0?.gender || "N/A",
-      dob: step1?.dateOfBirth || step0?.dateOfBirth || "N/A",
+      // dob: step1?.dateOfBirth || step0?.dateOfBirth || "N/A",
+      dob: buildDob(),
       ageAsOn: step0?.age ? `${step0.age} Years` : "N/A",
       category: step1?.category || step0?.category || "N/A",
       mobile: step1?.mobileNo || step0?.mobileNo || candidate.mobileNumber || "N/A",
@@ -1892,12 +1963,8 @@ export default function DashboardContent() {
                     {candidateInfo.registrationNo}
                   </p>
                 </div>
-                <div>
-                  <p className="text-[11px] text-[var(--ink-soft)]">Form No.</p>
-                  <p className="text-sm font-bold text-[var(--ochre-deep)] tabular-nums tracking-wider">
-                    {candidateInfo.formNo}
-                  </p>
-                </div>
+               
+               
                 <div>
                   <p className="text-[11px] text-[var(--ink-soft)]">
                     Application Status

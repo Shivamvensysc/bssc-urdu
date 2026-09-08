@@ -1,5 +1,20 @@
+/**
+ * registrationApi.ts
+ * -------------------
+ * All network calls used by the Candidate Registration form live here.
+ * The component should never call `axios` directly — it imports the
+ * functions/types below instead. This keeps the form component focused on
+ * UI + validation, and gives you one place to change the base URL, add
+ * auth headers, retry logic, etc.
+ */
+
+
 import api from "./interceptor";
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+
+/* ---------------------------------------------------------------
+   TYPES
+--------------------------------------------------------------- */
 
 export interface Category {
   value: number;
@@ -51,6 +66,13 @@ export interface DisabilitiesResponse {
   total: number;
 }
 
+/* ---------------------------------------------------------------
+   CALLS
+   Each function throws a plain Error (with the backend's `message` when
+   available) on failure, matching the error-handling the form component
+   already expects in its try/catch blocks.
+--------------------------------------------------------------- */
+
 /** Fetch the full category / sub-category (caste) tree. */
 export async function fetchCategoriesApi(): Promise<Category[]> {
   const response = await api.get<CategoriesResponse>(`${BASE_URL}/categories`);
@@ -95,6 +117,24 @@ export async function fetchCaptchaApi(): Promise<{
   }
   return { captchaId: body.captchaId, captchaSvg: body.captchaSvg };
 }
+
+/**
+ * Validate the candidate's typed CAPTCHA answer against a captchaId.
+ * Returns the raw response (success/message) rather than throwing, so the
+ * caller can decide whether to show an inline error and re-fetch a new
+ * CAPTCHA — same behaviour the form relied on before.
+ */
+// export async function validateCaptchaApi(
+//   captchaId: string,
+//   captchaText: string,
+// ): Promise<CaptchaValidateResponse> {
+//   const response = await api.post<CaptchaValidateResponse>(
+//     `${BASE_URL}/auth/captcha/validate`,
+//     { captchaId, captchaText },
+//     { headers: { "Content-Type": "application/json" } },
+//   );
+//   return response.data;
+// }
 
 export async function validateCaptchaApi(
   captchaId: string,

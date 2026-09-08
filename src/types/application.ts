@@ -52,6 +52,10 @@ export interface PersonalData {
   corrDistrict?: string;
   corrState?: string;
   corrPinCode?: string;
+
+  isScribeRequired?: string;  // <-- Add this
+  isOwnScribe?: string;       // <-- Add this
+  ownScribeRequired?: string;
 }
 
 export interface PaymentData {

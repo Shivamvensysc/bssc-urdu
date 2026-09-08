@@ -1470,6 +1470,10 @@ export interface RegistrationFormData {
   catCertIssueDt?: string;
 
   isOwnScribe?: string;
+
+  experienceCertificate?: string;
+  agreementCopy?: string;
+  declaration: boolean;
 }
 
 export interface SendOtpResponse {

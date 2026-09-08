@@ -1596,6 +1596,7 @@
 //   return pdf;
 // }
 
+
 import { jsPDF } from "jspdf";
 
 interface AddressData {
@@ -1631,6 +1632,7 @@ interface DisabilityDetails {
   issueDate: string;
   authority: string;
   scribeRequired: string;
+  isownscribe: string;
 }
 
 interface SportsDetails {
@@ -1697,6 +1699,10 @@ interface SlipData {
   nameOfPost: string;
   agreementCircular: string;
   contractualPeriod: string | null;
+  contractualFromDate: string; // <-- ADD THIS
+  contractualToDate: string;
+  agreementCopyUploaded: string; // <-- ADD THIS
+  experienceCertificateUploaded: string; // <-- ADD THIS
   departmentName: string;
   officeOrderNo: string;
   identificationMark: string;
@@ -1739,6 +1745,7 @@ interface ApiStep0 {
   gender?: string;
   mobileNo?: string;
   mobileNumber?: string;
+  isownscribe?: string;
   emailId?: string;
   dateOfBirth?: string;
   category?: string;
@@ -1827,6 +1834,19 @@ interface ApiStep1 {
   domicileIssueDateDay?: string;
   domicileIssueDateMonth?: string;
   domicileIssueDateYear?: string;
+
+  dobDay?: string; // <-- ADD THESE
+  dobMonth?: string;
+  dobYear?: string;
+  isownscribe?: string;
+  contractualFromDay?: string;
+  contractualFromMonth?: string;
+  contractualFromYear?: string;
+  contractualToDay?: string;
+  contractualToMonth?: string;
+  contractualToYear?: string;
+  agreementCopy?: string;
+  experienceCertificate?: string;
 }
 
 interface ApiEducationRowRaw {
@@ -1862,6 +1882,8 @@ interface ApiStep4 {
   photograph?: string;
   signatureEnglish?: string;
   signatureHindi?: string;
+  agreementCopy?: string; // <-- ADD THESE
+  experienceCertificate?: string;
 }
 
 interface ApiStep5 {
@@ -2161,9 +2183,30 @@ function shapeSlipData(apiData: ApiData): SlipData {
   const payment = apiData?.steps?.payment || apiData?.steps?.step2 || {};
   const candidateDetails = apiData?.candidateDetails || {};
 
-  const dob = parseDMY(step0.dateOfBirth);
+  // const dob = parseDMY(step0.dateOfBirth);
+  // const ageDiff = diffYMD(dob, AGE_REFERENCE_DATE);
+  // const age = ymdLabel(ageDiff);
+
+  // ---- Build Date of Birth ----
+  let dateOfBirthStr = fmtDMY(step0.dateOfBirth);
+  if (dateOfBirthStr === "-") {
+    dateOfBirthStr = buildDMY(step1.dobDay, step1.dobMonth, step1.dobYear);
+  }
+  const dob = parseDMY(dateOfBirthStr);
   const ageDiff = diffYMD(dob, AGE_REFERENCE_DATE);
-  const age = ymdLabel(ageDiff);
+  
+  // Use backend age if diffYMD fails, otherwise use computed
+  const age = step0.age ? `${step0.age} YEARS` : ymdLabel(ageDiff);
+
+  // ---- Build Contractual Dates ----
+  let contractualFromDate = fmtDMY(step0.contractualFromDate);
+  if (contractualFromDate === "-") {
+    contractualFromDate = buildDMY(step1.contractualFromDay, step1.contractualFromMonth, step1.contractualFromYear);
+  }
+  let contractualToDate = fmtDMY(step0.contractualToDate);
+  if (contractualToDate === "-") {
+    contractualToDate = buildDMY(step1.contractualToDay, step1.contractualToMonth, step1.contractualToYear);
+  }
 
   // Prefer the backend's own pre-computed contractual-period string
   // (candidateDetails.contractualPeriod, e.g. "3Y-11M-1D") since it's
@@ -2280,11 +2323,12 @@ function shapeSlipData(apiData: ApiData): SlipData {
       candidateDetails.mobileNumber ||
       "-",
     emailId: step0.emailId || "-",
-    dateOfBirth: fmtDMY(step0.dateOfBirth),
+    dateOfBirth: dateOfBirthStr,
     age,
     nationality: step1.nationality || "-",
     maritalStatus,
     spouseName,
+    
 
     category: latinHalf(step0.category),
     caste: latinHalf(step0.caste),
@@ -2314,14 +2358,16 @@ function shapeSlipData(apiData: ApiData): SlipData {
         ? {
             nature: step0.natureOfDisability || step0.pwdType || "-",
             natureType: step0.disTypePersist || step0.natureOfDisabilityType || "-",
-            min40Percent: yn(step0.pwd40Percent === "YES"),
-            certNo:
-              step0.disabilityCertNo || step0.pwdCertificateNumber || "-",
+            min40Percent: yn(step0.pwd40Percent),
+            certNo: step0.disabilityCertNo || step0.pwdCertificateNumber || "-",
             issueDate: fmtDMY(step0.disabilityIssueDate),
             authority: step0.disabilityAuthority || "-",
-            scribeRequired: yn(step0.isScribeRequired === "YES"),
+            scribeRequired: yn(step0.isScribeRequired), // <-- FIXED
+            isownscribe: yn(step1.isownscribe || step0.isownscribe) // <-- ADDED
           }
         : null,
+
+
 
     hasAadharCard: step1.hasAadharCard === "YES" ? "YES" : "NO",
     aadharCardNumber: step1.aadharCardNumber || "-",
@@ -2332,13 +2378,16 @@ function shapeSlipData(apiData: ApiData): SlipData {
     numberOfAttempts: step0.numberOfAttempts ?? step0.bsscAttempts ?? "0",
     hasPostExperience: yn(step0.hasPostExperience === "YES"),
 
-    contractualEmployee: yn(step0.contractualEmployee === "YES"),
+   contractualEmployee: yn(step0.contractualEmployee),
     nameOfPost: latinHalf(step0.nameOfPost),
-    agreementCircular: yn(step0.agreementCircular === "YES"),
+    agreementCircular: yn(step0.agreementCircular),
+    contractualFromDate, // <-- ADDED
+    contractualToDate, // <-- ADDED
     contractualPeriod,
     departmentName: step0.departmentName || step0.organizationName || "-",
     officeOrderNo: step0.officeOrderNo || "-",
-
+    agreementCopyUploaded: (step1.agreementCopy || step4.agreementCopy) ? "YES" : "NO", // <-- ADDED
+    experienceCertificateUploaded: (step1.experienceCertificate || step4.experienceCertificate) ? "YES" : "NO", // <-- ADDED
     identificationMark:
       [step1.identificationMarkEn, step1.identificationMarkEn2]
         .filter(Boolean)
@@ -3118,6 +3167,7 @@ export async function generateRegistrationSlipPDF(
       ["DISABILITY CERTIFICATE ISSUE DATE :", d.issueDate],
       ["DISABILITY CERTIFICATE ISSUING AUTHORITY :", d.authority],
       ["DO YOU REQUIRE A SCRIBE? :", d.scribeRequired],
+      ["IS OWN SCRIBE REQUIRED? :", d.isownscribe],
     ]);
   }
 
@@ -3167,12 +3217,16 @@ export async function generateRegistrationSlipPDF(
         "DO YOU HAVE AGREEMENT IN THE LIGHT OF CIRCULAR NO. - 1003, DATED - 22.01.2021 OF GENERAL ADMINISTRATION DEPARTMENT, BIHAR, PATNA? :",
         data.agreementCircular,
       ],
+      ["CONTRACTUAL FROM DATE :", data.contractualFromDate], // <-- ADD THIS LINE
+      ["CONTRACTUAL TO DATE :", data.contractualToDate],
       [
         "CONTRACTUAL SERVICE PERIOD IN BIHAR GOVERNMENT? :",
         data.contractualPeriod ?? "-",
       ],
       ["NAME OF DEPARTMENT/OFFICE :", data.departmentName],
       ["OFFICE ORDER NUMBER :", data.officeOrderNo],
+      ["AGREEMENT COPY UPLOADED :", data.agreementCopyUploaded],             // <-- ADD THIS LINE
+      ["EXPERIENCE CERTIFICATE UPLOADED :", data.experienceCertificateUploaded], // <-- ADD THIS LINE
     ], { labelW: WIDE_LABEL_W });
   }
 
