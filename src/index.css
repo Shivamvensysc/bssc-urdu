@@ -1,3 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/**
+ * MERGE INSTRUCTIONS
+ * -------------------
+ * Append this whole block to your existing src/index.css.
+ * This is exactly the CSS that used to live in RegistrationForm.tsx's
+ * `FONTS` template string / inline <style>{FONTS}</style> tag — moved
+ * here so it's loaded once globally instead of being injected by the
+ * component on every render. No selectors, values, or behavior changed.
+ *
+ * The --rf-* custom properties mirror src/theme/colors.ts and
+ * tailwind.config.js's theme.extend.colors 1:1 — keep all three in sync.
+ */
+
+ 
+:root {
+  --rf-ink: #12233F;
+  --rf-ink-soft: #5B6B84;
+  --rf-paper: #F4F5F2;
+  --rf-card: #FFFFFF;
+  --rf-line: #DBDFE6;
+  --rf-ochre: #B9722E;
+  --rf-ochre-deep: #8F5522;
+  --rf-teal: #1E6F5C;
+  --rf-danger: #B3432B;
+}
+
+.rf-root, .rf-root * { font-family: 'Manrope', sans-serif; box-sizing: border-box; }
+.rf-display { font-family: 'Fraunces', serif; }
+.rf-mono { font-family: 'JetBrains Mono', monospace; }
+
+.rf-root input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
+.rf-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: 999px; border: 1.5px solid var(--rf-line);
+  background: #fff; cursor: pointer; font-weight: 700; font-size: 12.5px;
+  color: var(--rf-ink); transition: all .15s ease; user-select: none;
+}
+.rf-pill:hover { border-color: var(--rf-ochre); }
+.rf-radio-input:checked + .rf-pill {
+  background: var(--rf-ink); border-color: var(--rf-ink); color: #fff;
+}
+.rf-radio-input:focus-visible + .rf-pill { outline: 2px solid var(--rf-ochre); outline-offset: 2px; }
+
+.rf-input, .rf-select {
+  width: 100%; border: 1.5px solid var(--rf-line); border-radius: 10px;
+  padding: 11px 14px; font-size: 14px; font-weight: 600; color: var(--rf-ink);
+  background: #fff; outline: none; transition: border-color .15s ease, box-shadow .15s ease;
+}
+.rf-input:focus, .rf-select:focus {
+  border-color: var(--rf-ochre); box-shadow: 0 0 0 3px rgba(185,114,46,0.15);
+}
+.rf-input.rf-error, .rf-select.rf-error { border-color: var(--rf-danger); }
+.rf-input.rf-error:focus, .rf-select.rf-error:focus { box-shadow: 0 0 0 3px rgba(179,67,43,0.15); }
+.rf-input::placeholder { color: #A6AEBB; font-weight: 500; }
+
+.rf-rail-line { position: absolute; left: 19px; top: 40px; bottom: -8px; width: 2px; background: var(--rf-line); }
+.rf-rail-line.done { background: var(--rf-teal); }
+
+@keyframes rf-pop { 0% { transform: scale(.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+.rf-pop { animation: rf-pop .35s cubic-bezier(.34,1.56,.64,1); }
+
+@keyframes rf-spin { to { transform: rotate(360deg); } }
+.rf-spin { animation: rf-spin .8s linear infinite; }
+
+/* Sticky progress bar styles */
+.rf-sticky-progress {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--rf-card);
+  border-bottom: 1.5px solid var(--rf-line);
+  transition: box-shadow 0.2s ease;
+}
+.rf-sticky-progress.scrolled {
+  box-shadow: 0 2px 12px rgba(18, 35, 63, 0.08);
+}

@@ -54,11 +54,11 @@ export default function Home() {
   const notifications: NotificationItem[] = [
     {
       id: '1',
-      title: 'ADV NO. 01/2026, 4th GRADUATE LEVEL COMBINED COMPETITIVE EXAM (CGL-4)',
-      dept: 'Various Departments',
-      advtNo: 'ADV NO. 01/2026',
-      publishedDate: 'Announced',
-      closingDate: 'To Be Announced',
+      title: 'Assistant Urdu Translator (सहायक उर्दू अनुवादक)[cite: 1]',
+      dept: 'Cabinet Secretariat Department (Urdu Directorate)[cite: 1]',
+      advtNo: '01/26[cite: 1]',
+      publishedDate: '09.01.2026[cite: 1]',
+      closingDate: '29.01.2026[cite: 1]',
       status: 'Open',
       isNew: true,
     },
@@ -66,8 +66,8 @@ export default function Home() {
 
   const recentNotices: RecentNotice[] = [
     {
-      date: 'Announced',
-      title: 'ADV NO. 01/2026, 4th GRADUATE LEVEL COMBINED COMPETITIVE EXAM (CGL-4)',
+      date: '09.01.2026[cite: 1]',
+      title: 'ADV NO. 01/26, ASSISTANT URDU TRANSLATOR (सहायक उर्दू अनुवादक) Online Registration[cite: 1]',
       type: 'portal',
     },
   ];
@@ -79,19 +79,19 @@ export default function Home() {
       faqs: [
         {
           q: "I am unable to start a new registration — the 'Apply' button is not working. What should I do?",
-          a: "Clear your browser cache and cookies, or try a different browser (Chrome or Firefox, latest version)[cite: 1]. Ensure pop-up blockers are disabled for the portal[cite: 1]. If the issue persists, it is usually a server-load issue during peak hours — try again during off-peak times (early morning or late evening)[cite: 1]."
+          a: "Clear your browser cache and cookies, or try a different browser (Chrome or Firefox, latest version). Ensure pop-up blockers are disabled for the portal. If the issue persists, it is usually a server-load issue during peak hours — try again during off-peak times (early morning or late evening)."
         },
         {
           q: "Can I edit my personal details (name, date of birth, category) after final submission?",
-          a: "No[cite: 1]. Core details such as name, DOB, and category cannot be changed after final submission, as they are matched against your supporting certificates[cite: 1]. Only the designated \"Correction Window\" (announced separately) allows limited edits[cite: 1]."
+          a: "No. Core details such as name, DOB, and category cannot be changed after final submission, as they are matched against your supporting certificates. Only the designated \"Correction Window\" (announced separately) allows limited edits."
         },
         {
           q: "I am not sure which post/category I am eligible for. Where can I check?",
-          a: "Refer to the detailed eligibility criteria in the official notification (age limit, educational qualification, physical standards where applicable)[cite: 1]. The helpdesk cannot certify eligibility — this is determined by the Commission at the scrutiny stage[cite: 1]."
+          a: "Refer to the detailed eligibility criteria in the official notification (age limit, educational qualification, physical standards where applicable). The helpdesk cannot certify eligibility — this is determined by the Commission at the scrutiny stage."
         },
         {
           q: "Can I submit more than one application for the same post?",
-          a: "Only one application per candidate per post is permitted[cite: 1]. Multiple submissions may lead to rejection of all your applications[cite: 1]. If you registered by mistake, do not create a second profile — contact the helpdesk with your Registration ID to resolve it[cite: 1]."
+          a: "Only one application per candidate per post is permitted. Multiple submissions may lead to rejection of all your applications. If you registered by mistake, do not create a second profile — contact the helpdesk with your Registration ID to resolve it."
         }
       ]
     },
@@ -100,15 +100,15 @@ export default function Home() {
       faqs: [
         {
           q: "I am not receiving the OTP on my registered mobile number/email.",
-          a: "Wait at least 2–3 minutes before requesting a resend (frequent requests may trigger a temporary block)[cite: 1]. Check that your mobile has network signal and check the spam/junk folder for email OTPs[cite: 1]. If it still fails after 3 attempts, share your Registration ID/mobile number with the helpdesk for manual verification[cite: 1]."
+          a: "Wait at least 2–3 minutes before requesting a resend (frequent requests may trigger a temporary block). Check that your mobile has network signal and check the spam/junk folder for email OTPs. If it still fails after 3 attempts, share your Registration ID/mobile number with the helpdesk for manual verification."
         },
         {
           q: "I forgot my registration password. How do I reset it?",
-          a: "Use the \"Forgot Password\" link on the login page[cite: 1]. You'll need your registered mobile number or email and Registration ID[cite: 1]. A reset link/OTP will be sent to your registered contact details — this cannot be changed without identity proof[cite: 1]."
+          a: "Use the \"Forgot Password\" link on the login page. You'll need your registered mobile number or email and Registration ID. A reset link/OTP will be sent to your registered contact details — this cannot be changed without identity proof."
         },
         {
           q: "My account shows 'locked' after multiple failed login attempts. What now?",
-          a: "Accounts are typically auto-unlocked after 30 minutes[cite: 1]. If it remains locked beyond that, the helpdesk can manually unlock it — please provide your Registration ID and a copy of a valid ID proof[cite: 1]."
+          a: "Accounts are typically auto-unlocked after 30 minutes. If it remains locked beyond that, the helpdesk can manually unlock it — please provide your Registration ID and a copy of a valid ID proof."
         }
       ]
     },
@@ -117,11 +117,11 @@ export default function Home() {
       faqs: [
         {
           q: "My photo/signature upload keeps failing.",
-          a: "Check the file format (usually JPEG/JPG only) and size limit (commonly 20–50 KB for photo, 10–20 KB for signature — confirm exact limits in the notification)[cite: 1]. Use an online image compressor if the file exceeds the limit[cite: 1]. Ensure the photo is a recent passport-size photograph with a plain background, and the signature is in black/blue ink on white paper[cite: 1]."
+          a: "Check the file format (usually JPEG/JPG only) and size limit (commonly 20–50 KB for photo, 10–20 KB for signature — confirm exact limits in the notification). Use an online image compressor if the file exceeds the limit. Ensure the photo is a recent passport-size photograph with a plain background, and the signature is in black/blue ink on white paper."
         },
         {
           q: "Can I re-upload my photo after submission if it looks unclear?",
-          a: "Only during the correction window, if one is announced[cite: 1]. Otherwise, a blurred or non-compliant photo may be flagged during document verification, so it's best to get it right before final submission[cite: 1]."
+          a: "Only during the correction window, if one is announced. Otherwise, a blurred or non-compliant photo may be flagged during document verification, so it's best to get it right before final submission."
         }
       ]
     },
@@ -130,15 +130,15 @@ export default function Home() {
       faqs: [
         {
           q: "Which documents are mandatory to upload during registration?",
-          a: "Typically: educational certificates/mark sheets, category certificate (if applicable), age proof, domicile/residence certificate, and photo/signature[cite: 1]. The exact list is in the notification's \"Documents Required\" section — this can vary by post[cite: 1]."
+          a: "Typically: educational certificates/mark sheets, category certificate (if applicable), age proof, domicile/residence certificate, and photo/signature. The exact list is in the notification's \"Documents Required\" section — this can vary by post."
         },
         {
           q: "My certificate is in a language other than English — is that acceptable?",
-          a: "Most Commissions require an English or Hindi language certificate, or a certified translation[cite: 1]. If unsure, upload the original along with a translated/attested copy and flag it to the helpdesk for confirmation before final submission[cite: 1]."
+          a: "Most Commissions require an English or Hindi language certificate, or a certified translation. If unsure, upload the original along with a translated/attested copy and flag it to the helpdesk for confirmation before final submission."
         },
         {
           q: "The portal is rejecting my document upload with a file size/format error.",
-          a: "Convert the file to PDF (or the specified format) and compress it below the stated limit (commonly 100–200 KB per document)[cite: 1]. Free tools like SmallPDF or ILovePDF can help[cite: 1]. Avoid scanning at very high DPI, which inflates file size unnecessarily[cite: 1]."
+          a: "Convert the file to PDF (or the specified format) and compress it below the stated limit (commonly 100–200 KB per document). Free tools like SmallPDF or ILovePDF can help. Avoid scanning at very high DPI, which inflates file size unnecessarily."
         }
       ]
     },
@@ -147,19 +147,19 @@ export default function Home() {
       faqs: [
         {
           q: "I paid the application fee, but the status still shows 'Payment Pending.'",
-          a: "This usually resolves within 24–48 hours as banks confirm the transaction[cite: 1]. Do not make a second payment[cite: 1]. If the status doesn't update after 48 hours, share your transaction ID/UTR number and payment date with the helpdesk[cite: 1]."
+          a: "This usually resolves within 24–48 hours as banks confirm the transaction. Do not make a second payment. If the status doesn't update after 48 hours, share your transaction ID/UTR number and payment date with the helpdesk."
         },
         {
           q: "I was charged twice for the same application. How do I get a refund?",
-          a: "Duplicate/failed transactions where money was debited but the application wasn't confirmed are typically auto-refunded within 5–7 working days by the bank/payment gateway[cite: 1]. If not received, raise a ticket with both transaction reference numbers[cite: 1]."
+          a: "Duplicate/failed transactions where money was debited but the application wasn't confirmed are typically auto-refunded within 5–7 working days by the bank/payment gateway. If not received, raise a ticket with both transaction reference numbers."
         },
         {
           q: "Are there fee concessions for SC/ST/PwD/Ex-Servicemen candidates?",
-          a: "No[cite: 1]."
+          a: "No."
         },
         {
           q: "What payment modes are accepted?",
-          a: "Typically net banking, debit/credit card, and UPI[cite: 1]. If a particular mode fails repeatedly, try an alternate mode rather than retrying the same one multiple times[cite: 1]."
+          a: "Typically net banking, debit/credit card, and UPI. If a particular mode fails repeatedly, try an alternate mode rather than retrying the same one multiple times."
         }
       ]
     },
@@ -168,11 +168,11 @@ export default function Home() {
       faqs: [
         {
           q: "I made a mistake in my application. Can I correct it now?",
-          a: "Corrections are only allowed during the officially announced Correction Window, usually opened for a few days after the registration deadline[cite: 1]. Outside this window, no changes can be made — watch for the official announcement[cite: 1]."
+          a: "Corrections are only allowed during the officially announced Correction Window, usually opened for a few days after the registration deadline. Outside this window, no changes can be made — watch for the official announcement."
         },
         {
           q: "What details typically CANNOT be corrected even during the correction window?",
-          a: "Usually: category (once claimed with certificate), post applied for (in some cases), and the mobile number/email used for OTP verification[cite: 1]. Always check the specific correction-window notice, as rules vary by exam cycle[cite: 1]."
+          a: "Usually: category (once claimed with certificate), post applied for (in some cases), and the mobile number/email used for OTP verification. Always check the specific correction-window notice, as rules vary by exam cycle."
         }
       ]
     },
@@ -181,11 +181,11 @@ export default function Home() {
       faqs: [
         {
           q: "When and where will the admit card be released?",
-          a: "Admit cards are usually released 7–10 days before the exam date on the official portal, downloadable using your Registration ID and DOB/password[cite: 1]. An SMS/email alert is usually sent, but candidates should proactively check the portal rather than rely solely on notifications[cite: 1]."
+          a: "Admit cards are usually released 7–10 days before the exam date on the official portal, downloadable using your Registration ID and DOB/password. An SMS/email alert is usually sent, but candidates should proactively check the portal rather than rely solely on notifications."
         },
         {
           q: "Can I choose or change my exam centre?",
-          a: "No[cite: 1]."
+          a: "No."
         }
       ]
     },
@@ -194,15 +194,15 @@ export default function Home() {
       faqs: [
         {
           q: "The portal is very slow or not loading, especially close to the deadline.",
-          a: "This is common due to heavy traffic near the last date[cite: 1]. Avoid last-day submission; if you must, try during non-peak hours (late night/early morning) and avoid refreshing repeatedly, which can worsen server load[cite: 1]."
+          a: "This is common due to heavy traffic near the last date. Avoid last-day submission; if you must, try during non-peak hours (late night/early morning) and avoid refreshing repeatedly, which can worsen server load."
         },
         {
           q: "I completed the form but didn't get a confirmation/printout. Is my application submitted?",
-          a: "Log in and check your Application Status/Dashboard — if it shows \"Submitted\" or provides a downloadable acknowledgment, your application is registered[cite: 1]. Always download and save the confirmation PDF immediately after submission; do not rely on email confirmation alone[cite: 1]."
+          a: "Log in and check your Application Status/Dashboard — if it shows \"Submitted\" or provides a downloadable acknowledgment, your application is registered. Always download and save the confirmation PDF immediately after submission; do not rely on email confirmation alone."
         },
         {
           q: "Do I need to send a hard copy of the application/documents by post?",
-          a: "Generally no — most recruitment processes are now fully online, and physical documents are verified later at the interview/document-verification stage[cite: 1]. Confirm this specifically in the notification, as it varies[cite: 1]."
+          a: "Generally no — most recruitment processes are now fully online, and physical documents are verified later at the interview/document-verification stage. Confirm this specifically in the notification, as it varies."
         }
       ]
     }
@@ -581,7 +581,7 @@ export default function Home() {
               })}
               
               <div className="mt-6 p-4 rounded-xl bg-slate-100 border border-slate-200 text-xs text-slate-500 leading-relaxed font-medium">
-                <span className="font-bold text-slate-700">Note:</span> This FAQ is a general reference and does not override the official recruitment notification[cite: 1]. In case of any conflict, the notification issued by Bihar Staff Selection Commission shall prevail[cite: 1].
+                <span className="font-bold text-slate-700">Note:</span> This FAQ is a general reference and does not override the official recruitment notification. In case of any conflict, the notification issued by Bihar Staff Selection Commission shall prevail.
               </div>
             </div>
           </div>
@@ -601,4 +601,4 @@ export default function Home() {
       `}</style>
     </div>
   );
-}
+} 

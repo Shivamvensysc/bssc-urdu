@@ -1,21 +1,5 @@
 import type { Step0Data, Step0Address } from "./applicationFormApi";
 
-/* =================================================================
-   mapStep0ToStep1
-   -----------------------------------------------------------------
-   Converts the `steps.step0` snapshot returned by
-   GET /application/steps/all into the flat key/value shape
-   Step1Personal already understands (dobDay/dobMonth/dobYear,
-   permVillage/permDistrict/..., categoryId, hasAadharCard, etc).
-
-   Rule: only fields that actually have a value in step0 are
-   included in the returned object. Step1Personal merges this object
-   UNDER whatever the candidate has already typed / previously saved
-   (`{ ...autoFill, ...prev }`), so:
-     - present in step0        -> pre-filled
-     - missing / null in step0 -> left blank for the candidate to fill
-================================================================= */
-
 type DatePart = "day" | "month" | "year";
 
 /** "16-10-1999" (DD-MM-YYYY) -> { day: "16", month: "10", year: "1999" } */

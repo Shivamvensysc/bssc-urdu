@@ -1,20 +1,5 @@
-/**
- * registrationApi.ts
- * -------------------
- * All network calls used by the Candidate Registration form live here.
- * The component should never call `axios` directly — it imports the
- * functions/types below instead. This keeps the form component focused on
- * UI + validation, and gives you one place to change the base URL, add
- * auth headers, retry logic, etc.
- */
-
-
 import api from "./interceptor";
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
-
-/* ---------------------------------------------------------------
-   TYPES
---------------------------------------------------------------- */
 
 export interface Category {
   value: number;
@@ -66,13 +51,6 @@ export interface DisabilitiesResponse {
   total: number;
 }
 
-/* ---------------------------------------------------------------
-   CALLS
-   Each function throws a plain Error (with the backend's `message` when
-   available) on failure, matching the error-handling the form component
-   already expects in its try/catch blocks.
---------------------------------------------------------------- */
-
 /** Fetch the full category / sub-category (caste) tree. */
 export async function fetchCategoriesApi(): Promise<Category[]> {
   const response = await api.get<CategoriesResponse>(`${BASE_URL}/categories`);
@@ -118,20 +96,56 @@ export async function fetchCaptchaApi(): Promise<{
   return { captchaId: body.captchaId, captchaSvg: body.captchaSvg };
 }
 
-/**
- * Validate the candidate's typed CAPTCHA answer against a captchaId.
- * Returns the raw response (success/message) rather than throwing, so the
- * caller can decide whether to show an inline error and re-fetch a new
- * CAPTCHA — same behaviour the form relied on before.
- */
 export async function validateCaptchaApi(
   captchaId: string,
   captchaText: string,
 ): Promise<CaptchaValidateResponse> {
-  const response = await api.post<CaptchaValidateResponse>(
-    `${BASE_URL}/auth/captcha/validate`,
-    { captchaId, captchaText },
-    { headers: { "Content-Type": "application/json" } },
-  );
-  return response.data;
+  try {
+    const response = await api.post<CaptchaValidateResponse>(
+      `${BASE_URL}/auth/captcha/validate`,
+      { captchaId, captchaText },
+      { headers: { "Content-Type": "application/json" } },
+    );
+    return response.data;
+  } catch (error: any) {
+    // This extracts your backend message before passing it to the component
+    throw new Error(error.response?.data?.message || error.message || "Failed to validate CAPTCHA");
+  }
 }
+
+
+export const initiateCandidateApi = async (email: string, mobileNumber: string, fullName: string, password: string) => {
+  try {
+    const response = await api.post(`${BASE_URL}/auth/candidate/initiate`, {
+      email,
+      mobileNumber,
+      fullName,
+      password
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || error.message || "Failed to initiate registration");
+  }
+};
+
+export const verifyOtpApi = async (zitadelUserId: string, type: "email" | "phone", otpCode: string) => {
+  try {
+    const response = await api.post(`${BASE_URL}/auth/candidate/verify-otp`, {
+      zitadelUserId,
+      type,
+      otpCode
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || error.message || `Failed to verify ${type} OTP`);
+  }
+};
+
+export const finalizeRegistrationApi = async (payload: any) => {
+  try {
+    const response = await api.post(`${BASE_URL}/auth/candidate/finalize`, payload);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || error.message || "Failed to finalize registration");
+  }
+};
