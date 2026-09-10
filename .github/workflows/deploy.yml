@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main  # Triggers the workflow whenever you push to the main branch
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -17,7 +18,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-node: '20' # Change to match your local Node version if needed
+        node-version: '20' 
         cache: 'npm'
 
     # 3. Install dependencies and build the app
@@ -26,21 +27,21 @@ jobs:
         npm install
         npm run build
 
-    # 4. Configure AWS Credentials
+    # 4. Configure AWS Credentials (FIXED DOT SYNTAX HERE)
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        aws-access-key-id: ${{ secrets::AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets::AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1 # Change to your actual AWS bucket region
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1 # Change to your actual AWS bucket region if different
 
-    # 5. Deploy files to S3 bucket (syncs and removes deleted files)
+    # 5. Deploy files to S3 bucket (FIXED DOT SYNTAX HERE)
     - name: Deploy to S3
       run: |
-        aws s3 sync dist/ s3://${{ secrets::AWS_S3_BUCKET_NAME }} --delete
+        aws s3 sync dist/ s3://${{ secrets.AWS_S3_BUCKET_NAME }} --delete
         # NOTE: If your build folder is named 'build' instead of 'dist', change 'dist/' to 'build/' above.
 
-    # 6. Invalidate CloudFront Cache so changes are visible instantly
+    # 6. Invalidate CloudFront Cache (FIXED DOT SYNTAX HERE)
     - name: Invalidate CloudFront Cache
       run: |
-        aws cloudfront create-invalidation --distribution-id ${{ secrets::CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+        aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
