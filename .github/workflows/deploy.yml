@@ -1,4 +1,4 @@
-name: Deploy React App to AWS S3 & CloudFront
+name: Deploy React App to AWS S3
 
 on:
   push:
@@ -6,44 +6,37 @@ on:
       - main
 
 jobs:
-  deploy: 
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
 
-    # 1. Get code from GitHub
-    - name: Checkout Code
-      uses: actions/checkout@v5
+      # 1. Get code from GitHub
+      - name: Checkout Code
+        uses: actions/checkout@v5
 
-    # 2. Install Node.js 24
-    - name: Setup Node.js
-      uses: actions/setup-node@v5
-      with:
-        node-version: '24'
-        cache: 'npm'
+      # 2. Install Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: npm
 
-    # 3. Install dependencies and build React application
-    - name: Install Dependencies & Build
-      run: |
-        npm ci
-        npm run build
+      # 3. Install dependencies and build React application
+      - name: Install Dependencies & Build
+        run: |
+          npm ci
+          npm run build
 
-    # 4. Configure AWS credentials
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ap-south-1
+      # 4. Configure AWS credentials
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
 
-    # 5. Upload build to S3
-    - name: Deploy to S3
-      run: |
-        aws s3 sync dist/ s3://${{ vars.AWS_S3_BUCKET_NAME }} --delete
-
-    # 6. Clear CloudFront cache
-    - name: Invalidate CloudFront Cache
-      run: |
-        aws cloudfront create-invalidation \
-          --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} \
-          --paths "/*"
+      # 5. Deploy React build to S3
+      - name: Deploy to S3
+        run: |
+          aws s3 sync dist/ s3://${{ vars.AWS_S3_BUCKET_NAME }} --delete
