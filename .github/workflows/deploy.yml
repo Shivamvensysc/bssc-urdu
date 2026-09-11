@@ -13,13 +13,13 @@ jobs:
 
       # 1. Get code from GitHub
       - name: Checkout Code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       # 2. Install Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '24'
           cache: npm
 
       # 3. Install dependencies and build React application
