@@ -1,47 +1,51 @@
+```yaml
 name: Deploy React App to AWS S3 & CloudFront
 
 on:
   push:
     branches:
-      - main  # Triggers the workflow whenever you push to the main branch
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Check out the repository code
-    - name: Checkout Code
-      uses: actions/checkout@v4
 
-    # 2. Set up Node.js environment (UPDATED TO NODE 24)
+    # 1. Get code from GitHub
+    - name: Checkout Code
+      uses: actions/checkout@v5
+
+    # 2. Install Node.js 24
     - name: Setup Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v5
       with:
-        node-version: '24' 
+        node-version: '24'
         cache: 'npm'
 
-    # 3. Install dependencies and build the app
+    # 3. Install dependencies and build React application
     - name: Install Dependencies & Build
       run: |
-        npm install
+        npm ci
         npm run build
 
-    # 4. Configure AWS Credentials
+    # 4. Configure AWS credentials
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1 # Change to your actual AWS bucket region if different
+        aws-region: ap-south-1
 
-    # 5. Deploy files to S3 bucket
+    # 5. Upload build to S3
     - name: Deploy to S3
       run: |
         aws s3 sync dist/ s3://${{ secrets.AWS_S3_BUCKET_NAME }} --delete
-        # NOTE: If your build folder is named 'build' instead of 'dist', change 'dist/' to 'build/' above.
 
-    # 6. Invalidate CloudFront Cache
+    # 6. Clear CloudFront cache
     - name: Invalidate CloudFront Cache
       run: |
-        aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+        aws cloudfront create-invalidation \
+          --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+          --paths "/*"
+```
