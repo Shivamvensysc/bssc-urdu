@@ -39,11 +39,11 @@ jobs:
     # 5. Upload build to S3
     - name: Deploy to S3
       run: |
-        aws s3 sync dist/ s3://${{ secrets.AWS_S3_BUCKET_NAME }} --delete
+        aws s3 sync dist/ s3://${{ vars.AWS_S3_BUCKET_NAME }} --delete
 
     # 6. Clear CloudFront cache
     - name: Invalidate CloudFront Cache
       run: |
         aws cloudfront create-invalidation \
-          --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+          --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} \
           --paths "/*"
